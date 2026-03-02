@@ -334,21 +334,28 @@ function jcqShowToast(msg){
   setTimeout(function(){t.classList.remove('show');},2500);
 }
 
-/* ── 이벤트 바인딩 (onclick 대신 addEventListener) ── */
-function ready(fn){
-  if(document.readyState!=='loading'){ fn(); }
-  else { document.addEventListener('DOMContentLoaded',fn); }
-}
-ready(function(){
-  document.getElementById('jcq-cta').addEventListener('click', jcqStart);
-  document.getElementById('jcq-opts').addEventListener('click', function(e){
-    var btn=e.target.closest('.jcq-opt');
-    if(btn) jcqPick(parseInt(btn.dataset.idx,10));
-  });
-  document.getElementById('jcq-btn-kakao').addEventListener('click', jcqShareKakao);
-  document.getElementById('jcq-btn-insta').addEventListener('click', jcqShareInsta);
-  document.getElementById('jcq-btn-url').addEventListener('click', jcqShareUrl);
-  document.getElementById('jcq-btn-retry').addEventListener('click', jcqReset);
+/* ── 이벤트 위임: document 레벨에서 처리 (타이밍 문제 없음) ── */
+document.addEventListener('click', function(e){
+  var el=e.target;
+  var c=function(sel){ return el.closest ? el.closest(sel) : null; };
+  if(c('#jcq-cta'))        { jcqStart();                                   return; }
+  var opt=c('.jcq-opt');
+  if(opt)                  { jcqPick(parseInt(opt.dataset.idx,10));         return; }
+  if(c('#jcq-btn-kakao'))  { jcqShareKakao();                               return; }
+  if(c('#jcq-btn-insta'))  { jcqShareInsta();                               return; }
+  if(c('#jcq-btn-url'))    { jcqShareUrl();                                 return; }
+  if(c('#jcq-btn-retry'))  { jcqReset();                                    return; }
+});
+document.addEventListener('touchend', function(e){
+  var el=e.target;
+  var c=function(sel){ return el.closest ? el.closest(sel) : null; };
+  if(c('#jcq-cta'))        { e.preventDefault(); jcqStart();                return; }
+  var opt=c('.jcq-opt');
+  if(opt)                  { e.preventDefault(); jcqPick(parseInt(opt.dataset.idx,10)); return; }
+  if(c('#jcq-btn-kakao'))  { e.preventDefault(); jcqShareKakao();           return; }
+  if(c('#jcq-btn-insta'))  { e.preventDefault(); jcqShareInsta();           return; }
+  if(c('#jcq-btn-url'))    { e.preventDefault(); jcqShareUrl();             return; }
+  if(c('#jcq-btn-retry'))  { e.preventDefault(); jcqReset();                return; }
 });
 
 })();
