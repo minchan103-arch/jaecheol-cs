@@ -6,6 +6,20 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+async function logToSheets(userMessage: string, botReply: string, escalated: boolean) {
+  const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
+  if (!webhookUrl) return;
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userMessage, botReply, escalated }),
+    });
+  } catch {
+    // 로깅 실패는 무시
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message, history = [] } = await req.json();
@@ -25,6 +39,8 @@ export async function POST(req: NextRequest) {
     const text = result.content[0].type === 'text' ? result.content[0].text : '';
     const isEscalate = text.startsWith('ESCALATE:');
     const reply = isEscalate ? text.replace('ESCALATE:', '').trim() : text;
+
+    logToSheets(message, reply, isEscalate); // fire-and-forget
 
     if (isEscalate) {
       console.log(`[에스컬레이션 필요] 웹사이트 채팅 - 메시지: "${message}"`);

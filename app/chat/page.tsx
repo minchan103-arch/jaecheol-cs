@@ -2,9 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+// 카카오톡 채널 개설 후 실제 URL로 교체하세요 (예: https://pf.kakao.com/_xxxxx/chat)
+const KAKAO_URL = 'https://pf.kakao.com/_replace';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  escalated?: boolean;
 }
 
 const QUICK_REPLIES = [
@@ -62,7 +66,7 @@ export default function ChatPage() {
         body: JSON.stringify({ message: text.trim(), history }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply, escalated: data.escalated }]);
     } catch {
       setMessages(prev => [
         ...prev,
@@ -78,10 +82,19 @@ export default function ChatPage() {
       {/* 헤더 */}
       <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
         <span className="text-3xl">🍊</span>
-        <div>
+        <div className="flex-1">
           <p className="font-bold text-gray-800 text-sm">제철삼촌 고객센터</p>
           <p className="text-xs text-gray-700">운영시간 10:00 - 19:00</p>
         </div>
+        <a
+          href={KAKAO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 bg-white text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm"
+          style={{ touchAction: 'manipulation' }}
+        >
+          👨 상담사 연결
+        </a>
       </div>
 
       {/* 메시지 */}
@@ -103,6 +116,21 @@ export default function ChatPage() {
                   {msg.content}
                 </div>
               </div>
+
+              {/* 에스컬레이션 시 상담사 연결 버튼 */}
+              {msg.escalated && (
+                <div className="mt-2 ml-9">
+                  <a
+                    href={KAKAO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-yellow-400 text-gray-800 text-xs font-bold px-4 py-2 rounded-full shadow-sm active:scale-95 transition-all"
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    💬 카카오톡 상담사 연결하기
+                  </a>
+                </div>
+              )}
 
               {/* 첫 인사 아래 빠른 선택 버튼 */}
               {i === 0 && showQuickReplies && (
