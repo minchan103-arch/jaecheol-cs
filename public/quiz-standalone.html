@@ -1,4 +1,4 @@
-<!-- 제철삼촌 과일 추천 퀴즈 v4 | 아임웹 HTML 위젯에 붙여넣기 -->
+<!-- 제철삼촌 과일 추천 퀴즈 v5 | 아임웹 HTML 위젯에 붙여넣기 -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 #jcq{font-family:-apple-system,'Apple SD Gothic Neo','맑은 고딕',sans-serif;max-width:560px;margin:0 auto;padding:24px 16px;background:#fff}
@@ -12,7 +12,7 @@
 .jcq-card-img{width:100px;height:90px;object-fit:cover;display:block}
 .jcq-img-fb{width:100px;height:90px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fff5f0,#ffd5c0);font-size:36px}
 .jcq-card-name{font-size:11px;font-weight:700;color:#374151;padding:7px 4px 9px}
-.jcq-cta{display:inline-block;background:#ff4910;color:#fff;font-size:16px;font-weight:900;padding:16px 48px;border-radius:999px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(255,73,16,.35);transition:transform .15s;-webkit-appearance:none}
+.jcq-cta{display:inline-block;background:#ff4910;color:#fff;font-size:16px;font-weight:900;padding:16px 48px;border-radius:999px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(255,73,16,.35);transition:transform .15s;-webkit-appearance:none;touch-action:manipulation}
 .jcq-cta:hover{transform:scale(1.04)}
 .jcq-hint{font-size:11px;color:#9ca3af;margin-top:12px}
 .jcq-quiz{display:none}
@@ -59,7 +59,7 @@
     <h2 class="jcq-title">삼촌이 조카님 취향에<br>딱 맞는 과일 골라드릴게요</h2>
     <p class="jcq-sub">새벽 경매장에서 직접 고른 제철과일 중에<br>조카님한테 딱 맞는 거 골라봐요 😊</p>
     <div class="jcq-scroll" id="jcq-preview"></div>
-    <button class="jcq-cta" type="button" onclick="jcqInitScores();JCQ_STATE.cur=0;document.getElementById('jcq-intro').style.display='none';document.getElementById('jcq-quiz').style.display='block';jcqRender();">삼촌한테 추천받기 →</button>
+    <button class="jcq-cta" type="button" data-action="start">삼촌한테 추천받기 →</button>
     <p class="jcq-hint">지금 제철인 과일 8가지 중에서 골라드려요 🍓</p>
   </div>
   <div class="jcq-quiz" id="jcq-quiz">
@@ -82,16 +82,16 @@
       <div class="jcq-r-box-title">삼촌이 이 과일을 추천한 이유</div>
       <ul id="jcq-r-feat"></ul>
     </div>
-    <button class="jcq-buy" id="jcq-r-buy" type="button" onclick="window.open(this.dataset.url,'_blank')">🛒 지금 바로 주문하기</button>
+    <button class="jcq-buy" id="jcq-r-buy" type="button" data-action="buy" data-url="">🛒 지금 바로 주문하기</button>
     <div class="jcq-share-wrap">
       <div class="jcq-share-title">결과 공유하기</div>
       <div class="jcq-share-btns">
-        <button class="jcq-sb" type="button" onclick="jcqShareKakao()"><span class="si">💬</span><span class="sl">카카오톡</span></button>
-        <button class="jcq-sb" type="button" onclick="jcqShareInsta()"><span class="si">📸</span><span class="sl">인스타</span></button>
-        <button class="jcq-sb" type="button" onclick="jcqShareUrl()"><span class="si">🔗</span><span class="sl">URL 복사</span></button>
+        <button class="jcq-sb" type="button" data-action="kakao"><span class="si">💬</span><span class="sl">카카오톡</span></button>
+        <button class="jcq-sb" type="button" data-action="insta"><span class="si">📸</span><span class="sl">인스타</span></button>
+        <button class="jcq-sb" type="button" data-action="url"><span class="si">🔗</span><span class="sl">URL 복사</span></button>
       </div>
     </div>
-    <button class="jcq-retry" type="button" onclick="jcqReset()">↩ 다시 하기</button>
+    <button class="jcq-retry" type="button" data-action="reset">↩ 다시 하기</button>
   </div>
   <div class="jcq-toast" id="jcq-toast"></div>
 </div>
@@ -104,7 +104,7 @@ var JCQ_FRUITS = {
   사과:{emoji:'🍎',img:'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&h=400&fit=crop&auto=format',sub:'조카님은 사과 타입! 삼촌이 아침부터 골라뒀어요 🍎',features:['비파괴 당도 측정으로 달달한 것만 삼촌이 직접 골랐어요','아삭하고 과즙이 풍부해서 먹을 때마다 기분 좋아요','냉장고에 차갑게 두면 더 달고 맛있어요'],url:'https://jaecheol.com/all'},
   배:{emoji:'🍐',img:'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=600&h=400&fit=crop&auto=format',sub:'조카님한텐 배가 딱이에요! 삼촌이 눈으로 골랐어요 🍐',features:['과즙이 넘쳐서 한 조각 먹으면 목이 시원해지는 느낌이에요','큼직하고 윤기 나는 배 중에서 삼촌이 손선별했어요','선물하면 고급스러워서 받는 분이 진짜 좋아해요'],url:'https://jaecheol.com/all'},
   키위:{emoji:'🥝',img:'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&h=400&fit=crop&auto=format',sub:'조카님한테 키위가 딱이에요! 영양은 삼촌이 책임져요 💚',features:['비타민C가 레몬의 2배! 삼촌도 매일 하나씩 먹어요','새콤달콤해서 아침에 먹으면 하루가 상쾌하게 시작돼요','껍질째 쪼개서 스푼으로 떠먹으면 더 맛있어요'],url:'https://jaecheol.com/all'},
-  토마토:{emoji:'🍅',img:'https://images.unsplash.com/photo-1592921870789-04563d55041c?w=600&h=400&fit=crop&auto=format',sub:'조카님은 대저짭짤이 타입! 삼촌이 부산까지 가서 골라왔어요 ❤️',features:['짭짤하고 달콤한 맛이 동시에 나는 대저만의 특별한 토마토예요','부산 대저동에서만 자라는 토종 품종, 삼촌도 매년 제철 되면 꼭 챙겨요','껍질 얇고 과즙 많아서 한 입 베어물면 입 안에서 터져요'],url:'https://jaecheol.com/all'},
+  토마토:{emoji:'🍅',img:'https://lh3.googleusercontent.com/d/1Rz-6g4bIZ1HojLC0AKjaeXQTUD0Quhc9',sub:'조카님은 대저짭짤이 타입! 삼촌이 부산까지 가서 골라왔어요 ❤️',features:['짭짤하고 달콤한 맛이 동시에 나는 대저만의 특별한 토마토예요','부산 대저동에서만 자라는 토종 품종, 삼촌도 매년 제철 되면 꼭 챙겨요','껍질 얇고 과즙 많아서 한 입 베어물면 입 안에서 터져요'],url:'https://jaecheol.com/all'},
   참외:{emoji:'🍈',img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=600&h=400&fit=crop&auto=format',sub:'조카님은 참외 타입! 한국 과일의 정수예요 🍈',features:['한국에서만 먹을 수 있는 제철 여름 과일이에요','달달한 향이 방에 가득 퍼질 만큼 향기로워요','삼촌이 줄기 색깔로 익은 것만 골라서 더 달아요'],url:'https://jaecheol.com/all'}
 };
 var JCQ_QS = [
@@ -152,7 +152,7 @@ function jcqRender(){
   document.getElementById('jcq-q').textContent=q.q;
   var html='';
   q.opts.forEach(function(o,i){
-    html+='<button class="jcq-opt" type="button" onclick="jcqPick('+i+')"><span class="oe">'+o.e+'</span><span class="ot">'+o.t+'</span></button>';
+    html+='<button class="jcq-opt" type="button" data-action="pick" data-idx="'+i+'"><span class="oe">'+o.e+'</span><span class="ot">'+o.t+'</span></button>';
   });
   document.getElementById('jcq-opts').innerHTML=html;
 }
@@ -178,7 +178,9 @@ function jcqShowResult(){
   document.getElementById('jcq-r-sub').textContent=d.sub;
   var li=''; d.features.forEach(function(f){li+='<li>'+f+'</li>';});
   document.getElementById('jcq-r-feat').innerHTML=li;
-  var btn=document.getElementById('jcq-r-buy'); btn.dataset.url=d.url; btn.textContent='🛒 '+winner+' 구매하러 가기';
+  var btn=document.getElementById('jcq-r-buy');
+  btn.setAttribute('data-url', d.url);
+  btn.textContent='🛒 '+winner+' 구매하러 가기';
 }
 
 function jcqReset(){
@@ -205,4 +207,22 @@ function jcqShowToast(msg){
   var t=document.getElementById('jcq-toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
+
+/* ── 이벤트 위임: onclick 없이 모든 버튼 처리 ── */
+document.getElementById('jcq').addEventListener('click', function(e){
+  var el = e.target;
+  while(el && el !== this){
+    if(el.tagName === 'BUTTON') break;
+    el = el.parentElement;
+  }
+  if(!el || el.tagName !== 'BUTTON') return;
+  var action = el.getAttribute('data-action');
+  if(action === 'start'){ jcqStart(); }
+  else if(action === 'pick'){ jcqPick(parseInt(el.getAttribute('data-idx'), 10)); }
+  else if(action === 'buy'){ var u=el.getAttribute('data-url'); if(u) window.open(u,'_blank'); }
+  else if(action === 'kakao'){ jcqShareKakao(); }
+  else if(action === 'insta'){ jcqShareInsta(); }
+  else if(action === 'url'){ jcqShareUrl(); }
+  else if(action === 'reset'){ jcqReset(); }
+});
 </script>
