@@ -1,5 +1,5 @@
 (function () {
-  var QUIZ_URL = 'https://jaecheol-am8im97ap-tom-452b758d.vercel.app/quiz';
+  var QUIZ_URL = 'https://jaecheol-css.vercel.app/quiz';
 
   var style = document.createElement('style');
   style.textContent = [
