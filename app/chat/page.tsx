@@ -7,12 +7,21 @@ interface Message {
   content: string;
 }
 
+const QUICK_REPLIES = [
+  { emoji: '🚚', label: '배송 문의' },
+  { emoji: '📦', label: '상품/원산지' },
+  { emoji: '🔄', label: '교환/반품' },
+  { emoji: '🎁', label: '선물/단체주문' },
+  { emoji: '💬', label: '기타 문의' },
+];
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: '안녕하세요 조카님! 🍊\n제철삼촌입니다. 무엇을 도와드릴까요?' },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,12 +47,11 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const send = async () => {
-    if (!input.trim() || loading) return;
-
-    const userMsg = input.trim();
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || loading) return;
+    setShowQuickReplies(false);
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setMessages(prev => [...prev, { role: 'user', content: text.trim() }]);
     setLoading(true);
 
     try {
@@ -51,7 +59,7 @@ export default function ChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, history }),
+        body: JSON.stringify({ message: text.trim(), history }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
@@ -77,32 +85,54 @@ export default function ChatPage() {
       </div>
 
       {/* 메시지 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {msg.role === 'assistant' && (
-              <span className="text-xl mr-2 self-end">🍊</span>
-            )}
-            <div
-              className={`max-w-[78%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-yellow-400 text-gray-800 rounded-br-sm'
-                  : 'bg-white text-gray-800 shadow-sm rounded-bl-sm'
-              }`}
-            >
-              {msg.content}
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="space-y-3">
+          {messages.map((msg, i) => (
+            <div key={i}>
+              <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && (
+                  <span className="text-xl mr-2 self-end">🍊</span>
+                )}
+                <div
+                  className={`max-w-[78%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-yellow-400 text-gray-800 rounded-br-sm'
+                      : 'bg-white text-gray-800 shadow-sm rounded-bl-sm'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+
+              {/* 첫 인사 아래 빠른 선택 버튼 */}
+              {i === 0 && showQuickReplies && (
+                <div className="mt-3 ml-9 flex flex-wrap gap-2">
+                  {QUICK_REPLIES.map(qr => (
+                    <button
+                      key={qr.label}
+                      onClick={() => sendMessage(`${qr.emoji} ${qr.label}`)}
+                      className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm active:scale-95 transition-all"
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      <span>{qr.emoji}</span>
+                      <span>{qr.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start">
-            <span className="text-xl mr-2">🍊</span>
-            <div className="bg-white px-4 py-2 rounded-2xl rounded-bl-sm text-sm text-gray-400 shadow-sm">
-              답변 작성 중...
+          ))}
+
+          {loading && (
+            <div className="flex justify-start">
+              <span className="text-xl mr-2">🍊</span>
+              <div className="bg-white px-4 py-2 rounded-2xl rounded-bl-sm text-sm text-gray-400 shadow-sm">
+                답변 작성 중...
+              </div>
             </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* 입력창 */}
@@ -111,13 +141,13 @@ export default function ChatPage() {
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
+          onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
           onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)}
           placeholder="메시지를 입력하세요..."
           className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-yellow-400"
         />
         <button
-          onClick={send}
+          onClick={() => sendMessage(input)}
           disabled={loading}
           className="bg-yellow-400 text-gray-800 px-4 py-2 rounded-full text-sm font-semibold disabled:opacity-40"
         >

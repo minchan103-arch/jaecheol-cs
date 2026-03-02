@@ -264,7 +264,7 @@ export default function QuizPage() {
       {phase === 'result' && winner && (
         <div className="flex-1 flex flex-col p-6 bg-gray-50">
           {/* 이미지 */}
-          <div className="w-full h-52 rounded-2xl overflow-hidden mb-5 shadow-lg">
+          <div className="w-full rounded-2xl overflow-hidden mb-5 shadow-lg" style={{height:'320px'}}>
             {!imgError ? (
               <img
                 src={FRUITS[winner].img}
