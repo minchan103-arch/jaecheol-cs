@@ -9,7 +9,7 @@ interface Message {
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: '안녕하세요! 제철삼촌입니다 🍊\n궁금한 점 편하게 물어보세요!' },
+    { role: 'assistant', content: '안녕하세요 조카님! 🍊\n제철삼촌입니다. 무엇을 도와드릴까요?' },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
