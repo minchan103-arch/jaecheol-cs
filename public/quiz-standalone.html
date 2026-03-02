@@ -1,59 +1,68 @@
-<!-- 제철삼촌 과일 추천 퀴즈 | 아임웹 HTML 위젯에 통째로 붙여넣기 -->
+<!-- 제철삼촌 과일 추천 퀴즈 v2 | 아임웹 HTML 위젯에 붙여넣기 -->
 <style>
-#jcq{font-family:-apple-system,'Apple SD Gothic Neo','맑은 고딕',sans-serif;max-width:520px;margin:0 auto;padding:16px}
-#jcq *{box-sizing:border-box}
-.jcq-intro{background:#fffbeb;border-radius:20px;padding:40px 24px;text-align:center}
-.jcq-badge{display:inline-block;background:#fef08a;color:#92400e;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;margin-bottom:14px;letter-spacing:.04em}
-.jcq-title{font-size:24px;font-weight:800;color:#1c1c1c;line-height:1.3;margin:0 0 8px}
-.jcq-sub{font-size:13px;color:#6b7280;margin:0 0 28px;line-height:1.6}
-.jcq-fruits{display:flex;justify-content:center;gap:10px;margin-bottom:28px;flex-wrap:wrap}
-.jcq-fc{background:#fff;border-radius:14px;padding:14px 16px;width:130px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
-.jcq-fc .em{font-size:28px;display:block;margin-bottom:5px}
-.jcq-fc .nm{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:3px}
-.jcq-fc .ds{font-size:10px;color:#9ca3af;line-height:1.4}
-.jcq-start{display:inline-block;background:#facc15;color:#1c1c1c;font-size:15px;font-weight:800;padding:14px 36px;border-radius:999px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(250,204,21,.4)}
-.jcq-start:hover{background:#eab308}
+*{box-sizing:border-box;margin:0;padding:0}
+#jcq{font-family:-apple-system,'Apple SD Gothic Neo','맑은 고딕',sans-serif;max-width:560px;margin:0 auto;padding:20px 16px}
 
-/* 퀴즈 화면 */
-.jcq-quiz{display:none;background:#fff;border-radius:20px;padding:32px 24px}
-.jcq-prog-wrap{background:#f3f4f6;border-radius:999px;height:5px;margin-bottom:24px}
-.jcq-prog{background:#facc15;height:5px;border-radius:999px;transition:width .4s}
-.jcq-step{font-size:11px;color:#9ca3af;text-align:center;margin-bottom:16px}
-.jcq-q{font-size:19px;font-weight:800;color:#1c1c1c;text-align:center;line-height:1.4;margin-bottom:24px}
-.jcq-opts{display:flex;flex-direction:column;gap:10px}
-.jcq-opt{display:flex;align-items:center;gap:12px;background:#f9fafb;border:2px solid #f3f4f6;border-radius:14px;padding:14px 18px;text-align:left;cursor:pointer;font-size:14px;font-weight:500;color:#374151;transition:border-color .15s,background .15s;width:100%}
-.jcq-opt:hover{border-color:#facc15;background:#fffbeb}
-.jcq-opt .oe{font-size:22px}
+/* ── 인트로 ── */
+.jcq-intro{text-align:center}
+.jcq-badge{display:inline-block;background:#fef08a;color:#92400e;font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;margin-bottom:18px;letter-spacing:.05em}
+.jcq-title{font-size:26px;font-weight:900;color:#111;line-height:1.3;margin-bottom:10px}
+.jcq-sub{font-size:13px;color:#6b7280;line-height:1.7;margin-bottom:28px}
 
-/* 결과 화면 */
-.jcq-result{display:none;background:#fff;border-radius:20px;padding:32px 24px;text-align:center}
-.jcq-r-emoji{font-size:72px;margin-bottom:16px}
-.jcq-r-badge{display:inline-block;background:#facc15;color:#1c1c1c;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;margin-bottom:10px}
-.jcq-r-name{font-size:26px;font-weight:800;color:#1c1c1c;margin:0 0 6px}
-.jcq-r-sub{font-size:13px;color:#6b7280;margin:0 0 20px}
-.jcq-r-box{background:#f9fafb;border-radius:14px;padding:18px 20px;margin-bottom:20px;text-align:left}
-.jcq-r-box p{font-size:11px;font-weight:700;color:#9ca3af;margin:0 0 10px}
-.jcq-r-box ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
-.jcq-r-box li{font-size:13px;color:#374151;display:flex;gap:7px}
-.jcq-r-box li::before{content:"✓";color:#facc15;flex-shrink:0;margin-top:1px}
-.jcq-buy{display:block;background:#facc15;color:#1c1c1c;font-size:14px;font-weight:800;padding:14px;border-radius:999px;text-decoration:none;margin-bottom:10px}
+.jcq-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:28px;scrollbar-width:none}
+.jcq-scroll::-webkit-scrollbar{display:none}
+.jcq-card{flex:0 0 110px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);text-align:center}
+.jcq-card img{width:110px;height:100px;object-fit:cover}
+.jcq-card-name{font-size:12px;font-weight:700;color:#374151;padding:8px 4px 10px}
+
+.jcq-cta{display:inline-block;background:#facc15;color:#111;font-size:16px;font-weight:900;padding:16px 44px;border-radius:999px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(250,204,21,.45);transition:transform .15s}
+.jcq-cta:hover{transform:scale(1.04)}
+.jcq-hint{font-size:11px;color:#9ca3af;margin-top:12px}
+
+/* ── 퀴즈 ── */
+.jcq-quiz{display:none}
+.jcq-prog-wrap{background:#f3f4f6;border-radius:999px;height:6px;margin-bottom:8px}
+.jcq-prog{background:linear-gradient(90deg,#facc15,#fb923c);height:6px;border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.jcq-step{font-size:11px;color:#9ca3af;text-align:right;margin-bottom:24px}
+.jcq-q{font-size:20px;font-weight:800;color:#111;text-align:center;line-height:1.4;margin-bottom:24px;min-height:56px}
+.jcq-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jcq-opt{background:#fff;border:2px solid #f3f4f6;border-radius:14px;padding:16px 12px;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;display:flex;align-items:center;gap:10px}
+.jcq-opt:hover{border-color:#facc15;background:#fffde7;transform:translateY(-1px)}
+.jcq-opt:active{transform:scale(.97)}
+.jcq-opt .oe{font-size:26px;flex-shrink:0}
+.jcq-opt .ot{font-size:13px;font-weight:600;color:#374151;line-height:1.35}
+
+/* ── 결과 ── */
+.jcq-result{display:none}
+.jcq-r-img{width:100%;height:220px;object-fit:cover;border-radius:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.jcq-r-badge{display:inline-block;background:#facc15;color:#111;font-size:11px;font-weight:700;padding:4px 14px;border-radius:999px;margin-bottom:10px}
+.jcq-r-name{font-size:28px;font-weight:900;color:#111;margin-bottom:6px}
+.jcq-r-sub{font-size:13px;color:#6b7280;margin-bottom:20px;line-height:1.6}
+.jcq-r-box{background:#f9fafb;border-radius:16px;padding:18px 20px;margin-bottom:20px}
+.jcq-r-box-title{font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:12px}
+.jcq-r-box ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.jcq-r-box li{font-size:13px;color:#374151;display:flex;gap:8px;align-items:flex-start}
+.jcq-r-box li::before{content:"✓";color:#facc15;font-weight:900;flex-shrink:0;margin-top:1px}
+.jcq-buy{display:block;background:#facc15;color:#111;font-size:15px;font-weight:800;padding:16px;border-radius:999px;text-decoration:none;text-align:center;margin-bottom:10px;transition:background .15s}
 .jcq-buy:hover{background:#eab308}
-.jcq-retry{background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;padding:8px;width:100%}
+.jcq-share{display:block;background:#fff;border:2px solid #e5e7eb;color:#6b7280;font-size:13px;font-weight:600;padding:13px;border-radius:999px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color .15s}
+.jcq-share:hover{border-color:#facc15;color:#374151}
+.jcq-retry{display:block;background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;padding:8px;width:100%;text-align:center}
 .jcq-retry:hover{color:#6b7280}
 </style>
 
 <div id="jcq">
+
   <!-- 인트로 -->
   <div class="jcq-intro" id="jcq-intro">
     <span class="jcq-badge">🍊 제철삼촌 추천 테스트</span>
     <h2 class="jcq-title">나에게 딱 맞는<br>제철과일은 뭘까요?</h2>
-    <p class="jcq-sub">5가지 질문으로 취향에 꼭 맞는 과일을 찾아드려요</p>
-    <div class="jcq-fruits">
-      <div class="jcq-fc"><span class="em">🍊</span><span class="nm">레드향</span><span class="ds">달콤하고<br>껍질 얇아요</span></div>
-      <div class="jcq-fc"><span class="em">🍊</span><span class="nm">한라봉</span><span class="ds">향 진하고<br>과육 탱탱해요</span></div>
-      <div class="jcq-fc"><span class="em">🍊</span><span class="nm">천혜향</span><span class="ds">새콤달콤<br>즙이 풍부해요</span></div>
-    </div>
-    <button class="jcq-start" onclick="jcqStart()">10초만에 내 과일 찾기 →</button>
+    <p class="jcq-sub">5가지 질문으로 취향에 꼭 맞는<br>제철과일을 찾아드려요!</p>
+
+    <div class="jcq-scroll" id="jcq-preview"></div>
+
+    <button class="jcq-cta" onclick="jcqStart()">10초만에 내 과일 찾기 →</button>
+    <p class="jcq-hint">8가지 제철과일 중 나에게 딱 맞는 것 🍓</p>
   </div>
 
   <!-- 퀴즈 -->
@@ -66,94 +75,219 @@
 
   <!-- 결과 -->
   <div class="jcq-result" id="jcq-result">
-    <div class="jcq-r-emoji">🍊</div>
-    <span class="jcq-r-badge">추천 과일</span>
-    <h3 class="jcq-r-name" id="jcq-r-name"></h3>
-    <p class="jcq-r-sub" id="jcq-r-sub"></p>
-    <div class="jcq-r-box">
-      <p>왜 이 과일일까요?</p>
-      <ul id="jcq-r-features"></ul>
+    <img class="jcq-r-img" id="jcq-r-img" src="" alt="">
+    <div style="text-align:center;margin-bottom:20px">
+      <span class="jcq-r-badge">추천 과일</span>
+      <h3 class="jcq-r-name" id="jcq-r-name"></h3>
+      <p class="jcq-r-sub" id="jcq-r-sub"></p>
     </div>
-    <a class="jcq-buy" id="jcq-r-buy" href="https://jaecheol.com" target="_blank">🛒 구매하기</a>
+    <div class="jcq-r-box">
+      <div class="jcq-r-box-title">왜 이 과일이 추천됐을까요?</div>
+      <ul id="jcq-r-feat"></ul>
+    </div>
+    <a class="jcq-buy" id="jcq-r-buy" href="https://jaecheol.com" target="_blank">🛒 구매하러 가기</a>
+    <button class="jcq-share" id="jcq-r-share" onclick="jcqShare()">🔗 결과 공유하기</button>
     <button class="jcq-retry" onclick="jcqReset()">다시 하기</button>
   </div>
 </div>
 
 <script>
-var JCQ = {
-  qs:[
-    {q:'어떤 맛이 더 끌리세요?',opts:[
-      {t:'달콤달콤한 게 최고',e:'🍯',s:{레드향:3}},
-      {t:'새콤달콤 균형이 좋아',e:'🍋',s:{천혜향:3}},
-      {t:'향이 진하고 과일다운 맛',e:'🌺',s:{한라봉:3}}
-    ]},
-    {q:'과일을 주로 어떻게 드세요?',opts:[
-      {t:'혼자 간식으로 먹어요',e:'🙋',s:{천혜향:2,레드향:1}},
-      {t:'온 가족이 함께 먹어요',e:'🏠',s:{레드향:3}},
-      {t:'소중한 분께 선물해요',e:'🎁',s:{한라봉:3}}
-    ]},
-    {q:'좋아하는 식감은 어떤 건가요?',opts:[
-      {t:'즙이 풍부하고 촉촉한 것',e:'💧',s:{천혜향:2,레드향:1}},
-      {t:'과육이 탱탱하고 단단한 것',e:'💪',s:{한라봉:3}},
-      {t:'시원하고 청량한 느낌',e:'🧊',s:{레드향:3}}
-    ]},
-    {q:'과일 향은 어느 정도가 좋아요?',opts:[
-      {t:'은은하게 향긋한 게 좋아',e:'🌸',s:{레드향:3}},
-      {t:'상큼하게 톡 올라오는 향',e:'✨',s:{천혜향:3}},
-      {t:'진하고 강한 향이 좋아',e:'🌿',s:{한라봉:3}}
-    ]},
-    {q:'주로 언제 과일을 즐기시나요?',opts:[
-      {t:'아침에 간단하게',e:'🌅',s:{천혜향:2,레드향:1}},
-      {t:'식후 디저트로',e:'🍽️',s:{레드향:2,천혜향:1}},
-      {t:'특별한 날 테이블에',e:'🎊',s:{한라봉:3}}
-    ]}
-  ],
-  data:{
-    레드향:{sub:'달콤하고 향긋한 레드향이 딱이에요!',features:['한라봉×천혜향 교배종으로 두 과일의 장점만 모았어요','껍질이 얇고 즙이 풍부해서 먹기 편해요','당도가 높아 남녀노소 모두 좋아하는 스테디셀러예요'],url:'https://jaecheol.com'},
-    한라봉:{sub:'향 진하고 과즙 탱탱한 한라봉이 딱이에요!',features:['울퉁불퉁한 모양이 특징인 프리미엄 감귤이에요','향이 진하고 과육이 탱탱해서 씹는 맛이 있어요','선물용으로 가장 인기 있는 제품이에요'],url:'https://jaecheol.com'},
-    천혜향:{sub:'새콤달콤 즙 풍부한 천혜향이 딱이에요!',features:['껍질이 얇고 즙이 넘쳐흘러 먹을 때 시원해요','새콤달콤한 맛의 균형이 완벽해요','상큼한 향이 기분을 좋게 해줘요'],url:'https://jaecheol.com'}
+/* ────────────────────────────────────
+   과일 데이터 (사진 URL은 나중에 교체)
+──────────────────────────────────── */
+var FRUITS = {
+  레드향:{
+    img:'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab12?w=600&h=400&fit=crop',
+    sub:'달콤하고 껍질 얇은 레드향이 딱이에요!',
+    features:['한라봉×천혜향 교배종, 두 과일의 장점만 모았어요','껍질이 얇아 까기 쉽고 즙이 풍부해요','당도가 높아 남녀노소 모두 좋아하는 스테디셀러예요'],
+    url:'https://jaecheol.com'
   },
-  cur:0,
-  scores:{레드향:0,한라봉:0,천혜향:0}
+  한라봉:{
+    img:'https://images.unsplash.com/photo-1574856344991-aaa31b6f4ce3?w=600&h=400&fit=crop',
+    sub:'향 진하고 과육 탱탱한 한라봉이 딱이에요!',
+    features:['울퉁불퉁한 모양이 특징인 프리미엄 감귤이에요','향이 진하고 과육이 탱탱해서 씹는 맛이 있어요','선물용으로 가장 인기 있는 제품이에요'],
+    url:'https://jaecheol.com'
+  },
+  천혜향:{
+    img:'https://images.unsplash.com/photo-1547514701-42782101795e?w=600&h=400&fit=crop',
+    sub:'새콤달콤 즙 풍부한 천혜향이 딱이에요!',
+    features:['껍질이 얇고 즙이 넘쳐흘러 먹을 때 시원해요','새콤달콤한 맛의 균형이 완벽해요','상큼한 향이 기분을 좋게 해줘요'],
+    url:'https://jaecheol.com'
+  },
+  사과:{
+    img:'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&h=400&fit=crop',
+    sub:'아삭아삭 달콤한 사과가 딱이에요!',
+    features:['한 입 베어물면 아삭하고 달콤한 과즙이 가득해요','식이섬유가 풍부해 든든한 간식으로 최고예요','냉장 보관하면 더욱 달콤하고 시원해요'],
+    url:'https://jaecheol.com'
+  },
+  배:{
+    img:'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=600&h=400&fit=crop',
+    sub:'시원하고 달콤한 배가 딱이에요!',
+    features:['과즙이 풍부하고 목 넘김이 시원해요','큼직하고 고급스러운 외관으로 선물용으로 최고예요','아삭한 식감과 청량한 달콤함이 특징이에요'],
+    url:'https://jaecheol.com'
+  },
+  키위:{
+    img:'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&h=400&fit=crop',
+    sub:'새콤달콤 영양 가득한 키위가 딱이에요!',
+    features:['비타민C가 레몬의 2배! 면역력 강화에 최고예요','새콤달콤한 맛이 입맛을 돋워줘요','한 개만 먹어도 하루 비타민C 섭취량을 채울 수 있어요'],
+    url:'https://jaecheol.com'
+  },
+  토마토:{
+    img:'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=600&h=400&fit=crop',
+    sub:'건강하고 맛있는 토마토가 딱이에요!',
+    features:['라이코펜이 풍부해 항산화 효과가 뛰어나요','달콤하고 새콤한 맛에 샐러드나 요리에 활용하기 좋아요','다이어트와 피부 건강에 도움이 되는 슈퍼푸드예요'],
+    url:'https://jaecheol.com'
+  },
+  참외:{
+    img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=600&h=400&fit=crop',
+    sub:'향긋하고 달콤한 참외가 딱이에요!',
+    features:['한국 대표 여름 과일! 달콤한 향이 가득해요','아삭아삭한 식감과 시원한 달콤함이 특징이에요','엽산과 비타민이 풍부한 건강 과일이에요'],
+    url:'https://jaecheol.com'
+  }
 };
 
+/* ────────────────────────────────────
+   퀴즈 질문
+──────────────────────────────────── */
+var QS = [
+  {
+    q:'어떤 맛이 가장 끌리세요?',
+    opts:[
+      {e:'🍯',t:'진하고 달콤한 맛',s:{레드향:2,사과:2,참외:2}},
+      {e:'🍋',t:'새콤달콤 균형 잡힌 맛',s:{천혜향:2,키위:2,토마토:1}},
+      {e:'🌺',t:'향이 진하고 과일다운 맛',s:{한라봉:3,사과:1}},
+      {e:'🌊',t:'시원하고 담백한 맛',s:{배:3,참외:1}}
+    ]
+  },
+  {
+    q:'좋아하는 식감은 어떤 건가요?',
+    opts:[
+      {e:'🥢',t:'아삭아삭 씹히는 것',s:{사과:3,배:2,참외:2}},
+      {e:'💧',t:'즙이 팡팡 터지는 것',s:{레드향:2,천혜향:2,토마토:2}},
+      {e:'🍮',t:'부드럽고 말랑한 것',s:{키위:3,한라봉:1}},
+      {e:'🧊',t:'탱탱하고 시원한 것',s:{배:2,참외:1,레드향:1}}
+    ]
+  },
+  {
+    q:'과일을 주로 어떻게 드세요?',
+    opts:[
+      {e:'🖐️',t:'그냥 바로 까서 먹어요',s:{참외:2,레드향:2,천혜향:1,사과:1}},
+      {e:'🍽️',t:'잘라서 접시에 놓고',s:{사과:2,배:2,한라봉:1}},
+      {e:'🥤',t:'주스나 스무디로',s:{키위:3,토마토:2}},
+      {e:'🥗',t:'요리나 샐러드에 활용',s:{토마토:3,키위:1}}
+    ]
+  },
+  {
+    q:'어떤 목적으로 드세요?',
+    opts:[
+      {e:'😋',t:'달달한 간식/후식으로',s:{레드향:2,사과:2,참외:2}},
+      {e:'💪',t:'건강/다이어트를 위해',s:{키위:3,토마토:3}},
+      {e:'🎁',t:'소중한 분께 선물로',s:{한라봉:3,배:3}},
+      {e:'👨‍👩‍👧‍👦',t:'온 가족 함께 먹을 것',s:{사과:2,레드향:1,천혜향:1}}
+    ]
+  },
+  {
+    q:'어떤 느낌의 과일이 좋아요?',
+    opts:[
+      {e:'✨',t:'작고 한 입에 쏙',s:{레드향:2,천혜향:2,키위:1}},
+      {e:'❄️',t:'시원하고 청량한 느낌',s:{배:3,참외:2}},
+      {e:'🌿',t:'향이 진하고 특색 있는',s:{한라봉:3}},
+      {e:'🎨',t:'색 예쁘고 건강한 느낌',s:{토마토:3,키위:2,사과:1}}
+    ]
+  }
+];
+
+/* ────────────────────────────────────
+   상태
+──────────────────────────────────── */
+var STATE = {
+  cur: 0,
+  scores: {}
+};
+
+function initScores(){
+  STATE.scores={};
+  Object.keys(FRUITS).forEach(function(k){STATE.scores[k]=0;});
+}
+
+/* ────────────────────────────────────
+   인트로 카드 렌더
+──────────────────────────────────── */
+(function renderPreview(){
+  var el=document.getElementById('jcq-preview');
+  Object.keys(FRUITS).forEach(function(k){
+    var d=FRUITS[k];
+    el.innerHTML+='<div class="jcq-card"><img src="'+d.img+'" alt="'+k+'" loading="lazy"><div class="jcq-card-name">'+k+'</div></div>';
+  });
+})();
+
+/* ────────────────────────────────────
+   퀴즈 로직
+──────────────────────────────────── */
 function jcqStart(){
+  initScores();
+  STATE.cur=0;
   document.getElementById('jcq-intro').style.display='none';
   document.getElementById('jcq-quiz').style.display='block';
   jcqRender();
 }
+
 function jcqRender(){
-  var q=JCQ.qs[JCQ.cur];
-  document.getElementById('jcq-prog').style.width=((JCQ.cur/5)*100)+'%';
-  document.getElementById('jcq-step').textContent=(JCQ.cur+1)+' / 5';
+  var q=QS[STATE.cur];
+  var pct=Math.round((STATE.cur/QS.length)*100);
+  document.getElementById('jcq-prog').style.width=pct+'%';
+  document.getElementById('jcq-step').textContent=(STATE.cur+1)+' / '+QS.length;
   document.getElementById('jcq-q').textContent=q.q;
   var html='';
   q.opts.forEach(function(o,i){
-    html+='<button class="jcq-opt" onclick="jcqPick('+i+')"><span class="oe">'+o.e+'</span>'+o.t+'</button>';
+    html+='<button class="jcq-opt" onclick="jcqPick('+i+')"><span class="oe">'+o.e+'</span><span class="ot">'+o.t+'</span></button>';
   });
   document.getElementById('jcq-opts').innerHTML=html;
 }
+
 function jcqPick(i){
-  var o=JCQ.qs[JCQ.cur].opts[i];
-  Object.keys(o.s).forEach(function(k){JCQ.scores[k]+=o.s[k];});
-  JCQ.cur++;
-  if(JCQ.cur<5){jcqRender();}
-  else{jcqShowResult();}
+  var s=QS[STATE.cur].opts[i].s;
+  Object.keys(s).forEach(function(k){STATE.scores[k]+=s[k];});
+  STATE.cur++;
+  if(STATE.cur<QS.length){
+    jcqRender();
+  } else {
+    jcqShowResult();
+  }
 }
+
 function jcqShowResult(){
-  var winner=Object.keys(JCQ.scores).reduce(function(a,b){return JCQ.scores[b]>JCQ.scores[a]?b:a;});
-  var d=JCQ.data[winner];
+  var winner=Object.keys(STATE.scores).reduce(function(a,b){return STATE.scores[b]>STATE.scores[a]?b:a;});
+  var d=FRUITS[winner];
   document.getElementById('jcq-quiz').style.display='none';
-  document.getElementById('jcq-result').style.display='block';
+  var r=document.getElementById('jcq-result');
+  r.style.display='block';
+  document.getElementById('jcq-r-img').src=d.img;
+  document.getElementById('jcq-r-img').alt=winner;
   document.getElementById('jcq-r-name').textContent=winner;
   document.getElementById('jcq-r-sub').textContent=d.sub;
   var li='';d.features.forEach(function(f){li+='<li>'+f+'</li>';});
-  document.getElementById('jcq-r-features').innerHTML=li;
-  document.getElementById('jcq-r-buy').href=d.url;
-  document.getElementById('jcq-r-buy').textContent='🛒 '+winner+' 구매하기';
+  document.getElementById('jcq-r-feat').innerHTML=li;
+  var btn=document.getElementById('jcq-r-buy');
+  btn.href=d.url;
+  btn.textContent='🛒 '+winner+' 구매하러 가기';
 }
+
+function jcqShare(){
+  var btn=document.getElementById('jcq-r-share');
+  if(navigator.share){
+    navigator.share({title:'제철삼촌 과일 추천',text:'나에게 딱 맞는 제철과일 찾았어요!',url:location.href});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(location.href).then(function(){
+      btn.textContent='✅ 링크가 복사됐어요!';
+      setTimeout(function(){btn.textContent='🔗 결과 공유하기';},2000);
+    });
+  }
+}
+
 function jcqReset(){
-  JCQ.cur=0;JCQ.scores={레드향:0,한라봉:0,천혜향:0};
+  initScores();
+  STATE.cur=0;
   document.getElementById('jcq-result').style.display='none';
   document.getElementById('jcq-intro').style.display='block';
 }
