@@ -1,0 +1,147 @@
+<!-- 제철삼촌 과일 추천 테스트 섹션 | 아임웹 HTML 위젯에 붙여넣기 -->
+<style>
+  .jc-section {
+    font-family: -apple-system, 'Apple SD Gothic Neo', '맑은 고딕', sans-serif;
+    background: #fffbeb;
+    border-radius: 20px;
+    padding: 48px 24px;
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .jc-badge {
+    display: inline-block;
+    background: #fef08a;
+    color: #92400e;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+    letter-spacing: .04em;
+  }
+  .jc-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1c1c1c;
+    line-height: 1.3;
+    margin: 0 0 10px;
+  }
+  .jc-sub {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 32px;
+    line-height: 1.6;
+  }
+  .jc-fruits {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .jc-fruit-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 20px;
+    width: 140px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .jc-fruit-card .emoji { font-size: 32px; display: block; margin-bottom: 6px; }
+  .jc-fruit-card .name { font-size: 13px; font-weight: 700; color: #374151; display: block; margin-bottom: 4px; }
+  .jc-fruit-card .desc { font-size: 11px; color: #9ca3af; line-height: 1.4; }
+  .jc-btn {
+    display: inline-block;
+    background: #facc15;
+    color: #1c1c1c;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 16px 40px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(250,204,21,.4);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .jc-btn:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(250,204,21,.5); }
+  .jc-hint { font-size: 12px; color: #9ca3af; margin-top: 12px; }
+
+  /* 모달 */
+  #jc-modal {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.5); justify-content: center; align-items: flex-end;
+  }
+  #jc-modal.on { display: flex; }
+  #jc-modal-inner {
+    background: #fff; border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px; height: 92dvh;
+    display: flex; flex-direction: column;
+    animation: jc-up .3s ease;
+  }
+  @keyframes jc-up { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  #jc-modal-top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px 12px; border-bottom: 1px solid #f3f4f6;
+  }
+  #jc-modal-top span { font-size: 13px; font-weight: 700; color: #374151; }
+  #jc-modal-x {
+    background: none; border: none; font-size: 20px;
+    cursor: pointer; color: #9ca3af; line-height: 1;
+  }
+  #jc-iframe { flex: 1; border: none; width: 100%; }
+</style>
+
+<div class="jc-section">
+  <span class="jc-badge">🍊 제철삼촌 추천 테스트</span>
+  <h2 class="jc-title">나에게 딱 맞는<br>제철과일은 뭘까요?</h2>
+  <p class="jc-sub">5가지 질문으로 취향에 꼭 맞는 과일을 찾아드려요<br>지금 바로 알아보세요!</p>
+
+  <div class="jc-fruits">
+    <div class="jc-fruit-card">
+      <span class="emoji">🍊</span>
+      <span class="name">레드향</span>
+      <span class="desc">달콤하고<br>껍질 얇아요</span>
+    </div>
+    <div class="jc-fruit-card">
+      <span class="emoji">🍊</span>
+      <span class="name">한라봉</span>
+      <span class="desc">향 진하고<br>과육 탱탱해요</span>
+    </div>
+    <div class="jc-fruit-card">
+      <span class="emoji">🍊</span>
+      <span class="name">천혜향</span>
+      <span class="desc">새콤달콤<br>즙이 풍부해요</span>
+    </div>
+  </div>
+
+  <button class="jc-btn" onclick="jcOpenQuiz()">10초만에 내 과일 찾기 →</button>
+  <p class="jc-hint">결과는 3가지 중 하나! 취향대로 골라드려요 🍊</p>
+</div>
+
+<!-- 퀴즈 모달 -->
+<div id="jc-modal" onclick="if(event.target===this)jcCloseQuiz()">
+  <div id="jc-modal-inner">
+    <div id="jc-modal-top">
+      <span>🍊 나에게 맞는 제철과일 찾기</span>
+      <button id="jc-modal-x" onclick="jcCloseQuiz()">✕</button>
+    </div>
+    <iframe id="jc-iframe" src="" allow="clipboard-write"></iframe>
+  </div>
+</div>
+
+<script>
+  var _jcLoaded = false;
+  function jcOpenQuiz() {
+    if (!_jcLoaded) {
+      document.getElementById('jc-iframe').src = 'https://jaecheol-cs.vercel.app/quiz';
+      _jcLoaded = true;
+    }
+    document.getElementById('jc-modal').classList.add('on');
+    document.body.style.overflow = 'hidden';
+  }
+  function jcCloseQuiz() {
+    document.getElementById('jc-modal').classList.remove('on');
+    document.body.style.overflow = '';
+  }
+</script>
