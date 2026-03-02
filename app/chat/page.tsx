@@ -47,7 +47,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white max-w-lg mx-auto shadow-lg">
+    <div className="flex flex-col bg-white max-w-lg mx-auto shadow-lg" style={{height:'100dvh',maxHeight:'-webkit-fill-available'}}>
       {/* 헤더 */}
       <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
         <span className="text-3xl">🍊</span>
