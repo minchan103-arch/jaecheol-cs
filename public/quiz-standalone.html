@@ -38,7 +38,7 @@
 .jcq-r-box ul{list-style:none;display:flex;flex-direction:column;gap:8px}
 .jcq-r-box li{font-size:13px;color:#374151;display:flex;gap:8px;align-items:flex-start}
 .jcq-r-box li::before{content:"✓";color:#ff4910;font-weight:900;flex-shrink:0;margin-top:1px}
-.jcq-buy{display:block;background:#ff4910;color:#fff;font-size:15px;font-weight:800;padding:16px;border-radius:999px;text-decoration:none;text-align:center;margin-bottom:10px;transition:background .15s;touch-action:manipulation}
+.jcq-buy{display:block;background:#ff4910;color:#fff!important;font-size:15px;font-weight:800;padding:16px;border-radius:999px;text-decoration:none!important;text-align:center;margin-bottom:10px;transition:background .15s;touch-action:manipulation;border:none;cursor:pointer;width:100%;-webkit-appearance:none}
 .jcq-buy:hover{background:#e03d0d}
 .jcq-share-wrap{margin-bottom:10px}
 .jcq-share-title{font-size:11px;color:#9ca3af;text-align:center;margin-bottom:8px}
@@ -59,7 +59,7 @@
     <h2 class="jcq-title">삼촌이 조카님 취향에<br>딱 맞는 과일 골라드릴게요</h2>
     <p class="jcq-sub">새벽 경매장에서 직접 고른 제철과일 중에<br>조카님한테 딱 맞는 거 골라봐요 😊</p>
     <div class="jcq-scroll" id="jcq-preview"></div>
-    <button class="jcq-cta" type="button" onclick="jcqStart()">삼촌한테 추천받기 →</button>
+    <button class="jcq-cta" type="button" onclick="jcqInitScores();JCQ_STATE.cur=0;document.getElementById('jcq-intro').style.display='none';document.getElementById('jcq-quiz').style.display='block';jcqRender();">삼촌한테 추천받기 →</button>
     <p class="jcq-hint">지금 제철인 과일 8가지 중에서 골라드려요 🍓</p>
   </div>
   <div class="jcq-quiz" id="jcq-quiz">
@@ -82,7 +82,7 @@
       <div class="jcq-r-box-title">삼촌이 이 과일을 추천한 이유</div>
       <ul id="jcq-r-feat"></ul>
     </div>
-    <a class="jcq-buy" id="jcq-r-buy" href="https://jaecheol.com/all" target="_blank">🛒 지금 바로 주문하기</a>
+    <button class="jcq-buy" id="jcq-r-buy" type="button" onclick="window.open(this.dataset.url,'_blank')">🛒 지금 바로 주문하기</button>
     <div class="jcq-share-wrap">
       <div class="jcq-share-title">결과 공유하기</div>
       <div class="jcq-share-btns">
@@ -98,14 +98,14 @@
 
 <script>
 var JCQ_FRUITS = {
-  레드향:{emoji:'🍊',img:'https://drive.google.com/uc?export=view&id=14rO7dLn0OuSkw4nC0HZGHuQqe836LjTO',sub:'조카님은 레드향 타입! 삼촌이 딱 보면 알아요 🍊',features:['삼촌이 새벽에 직접 고른 당도 높은 레드향이에요','한라봉×천혜향 교배종이라 두 과일의 장점을 다 가졌어요','껍질 얇고 즙 풍부해서 먹기 편하고 달달해요'],url:'https://jaecheol.com/all'},
-  한라봉:{emoji:'🍊',img:'https://drive.google.com/uc?export=view&id=1I0_4_l4vXIDYSWzWONR4Fxz_o4-ghPcR',sub:'조카님 취향엔 한라봉이 딱이에요! 삼촌 보장 🙏',features:['울퉁불퉁한 모양이지만 그 안에 진한 향이 꽉 찼어요','과육이 탱탱해서 씹을수록 맛이 나는 프리미엄 감귤이에요','선물하면 진짜 좋아해요. 삼촌도 매년 선물로 제일 많이 팔아요'],url:'https://jaecheol.com/all'},
-  천혜향:{emoji:'🍊',img:'https://drive.google.com/uc?export=view&id=1N094lyQzCao5qYkUzU8aJnnpkAKtqQ53',sub:'조카님한테 천혜향이 딱이에요! 삼촌 픽 🍊',features:['껍질 너무 얇아서 까기만 하면 즙이 터져요','새콤달콤한 맛 균형이 감귤 중에 최고라고 삼촌은 생각해요','향도 상큼해서 먹고 나서 기분이 좋아져요'],url:'https://jaecheol.com/all'},
-  사과:{emoji:'🍎',img:'https://drive.google.com/uc?export=view&id=1UcZ3PCa-OUu3nHeU3FfOAi_lrFrIlMBS',sub:'조카님은 사과 타입! 삼촌이 아침부터 골라뒀어요 🍎',features:['비파괴 당도 측정으로 달달한 것만 삼촌이 직접 골랐어요','아삭하고 과즙이 풍부해서 먹을 때마다 기분 좋아요','냉장고에 차갑게 두면 더 달고 맛있어요'],url:'https://jaecheol.com/all'},
-  배:{emoji:'🍐',img:'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=600&h=400&fit=crop',sub:'조카님한텐 배가 딱이에요! 삼촌이 눈으로 골랐어요 🍐',features:['과즙이 넘쳐서 한 조각 먹으면 목이 시원해지는 느낌이에요','큼직하고 윤기 나는 배 중에서 삼촌이 손선별했어요','선물하면 고급스러워서 받는 분이 진짜 좋아해요'],url:'https://jaecheol.com/all'},
-  키위:{emoji:'🥝',img:'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&h=400&fit=crop',sub:'조카님한테 키위가 딱이에요! 영양은 삼촌이 책임져요 💚',features:['비타민C가 레몬의 2배! 삼촌도 매일 하나씩 먹어요','새콤달콤해서 아침에 먹으면 하루가 상쾌하게 시작돼요','껍질째 쪼개서 스푼으로 떠먹으면 더 맛있어요'],url:'https://jaecheol.com/all'},
-  토마토:{emoji:'🍅',img:'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=600&h=400&fit=crop',sub:'조카님은 대저짭짤이 타입! 삼촌이 부산까지 가서 골라왔어요 ❤️',features:['짭짤하고 달콤한 맛이 동시에 나는 대저만의 특별한 토마토예요','부산 대저동에서만 자라는 토종 품종, 삼촌도 매년 제철 되면 꼭 챙겨요','껍질 얇고 과즙 많아서 한 입 베어물면 입 안에서 터져요'],url:'https://jaecheol.com/all'},
-  참외:{emoji:'🍈',img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=600&h=400&fit=crop',sub:'조카님은 참외 타입! 한국 과일의 정수예요 🍈',features:['한국에서만 먹을 수 있는 제철 여름 과일이에요','달달한 향이 방에 가득 퍼질 만큼 향기로워요','삼촌이 줄기 색깔로 익은 것만 골라서 더 달아요'],url:'https://jaecheol.com/all'}
+  레드향:{emoji:'🍊',img:'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab12?w=600&h=400&fit=crop&auto=format',sub:'조카님은 레드향 타입! 삼촌이 딱 보면 알아요 🍊',features:['삼촌이 새벽에 직접 고른 당도 높은 레드향이에요','한라봉×천혜향 교배종이라 두 과일의 장점을 다 가졌어요','껍질 얇고 즙 풍부해서 먹기 편하고 달달해요'],url:'https://jaecheol.com/all'},
+  한라봉:{emoji:'🍊',img:'https://images.unsplash.com/photo-1547514701-42782101795e?w=600&h=400&fit=crop&auto=format',sub:'조카님 취향엔 한라봉이 딱이에요! 삼촌 보장 🙏',features:['울퉁불퉁한 모양이지만 그 안에 진한 향이 꽉 찼어요','과육이 탱탱해서 씹을수록 맛이 나는 프리미엄 감귤이에요','선물하면 진짜 좋아해요. 삼촌도 매년 선물로 제일 많이 팔아요'],url:'https://jaecheol.com/all'},
+  천혜향:{emoji:'🍊',img:'https://images.unsplash.com/photo-1580052614034-c55d20bfee3b?w=600&h=400&fit=crop&auto=format',sub:'조카님한테 천혜향이 딱이에요! 삼촌 픽 🍊',features:['껍질 너무 얇아서 까기만 하면 즙이 터져요','새콤달콤한 맛 균형이 감귤 중에 최고라고 삼촌은 생각해요','향도 상큼해서 먹고 나서 기분이 좋아져요'],url:'https://jaecheol.com/all'},
+  사과:{emoji:'🍎',img:'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&h=400&fit=crop&auto=format',sub:'조카님은 사과 타입! 삼촌이 아침부터 골라뒀어요 🍎',features:['비파괴 당도 측정으로 달달한 것만 삼촌이 직접 골랐어요','아삭하고 과즙이 풍부해서 먹을 때마다 기분 좋아요','냉장고에 차갑게 두면 더 달고 맛있어요'],url:'https://jaecheol.com/all'},
+  배:{emoji:'🍐',img:'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=600&h=400&fit=crop&auto=format',sub:'조카님한텐 배가 딱이에요! 삼촌이 눈으로 골랐어요 🍐',features:['과즙이 넘쳐서 한 조각 먹으면 목이 시원해지는 느낌이에요','큼직하고 윤기 나는 배 중에서 삼촌이 손선별했어요','선물하면 고급스러워서 받는 분이 진짜 좋아해요'],url:'https://jaecheol.com/all'},
+  키위:{emoji:'🥝',img:'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&h=400&fit=crop&auto=format',sub:'조카님한테 키위가 딱이에요! 영양은 삼촌이 책임져요 💚',features:['비타민C가 레몬의 2배! 삼촌도 매일 하나씩 먹어요','새콤달콤해서 아침에 먹으면 하루가 상쾌하게 시작돼요','껍질째 쪼개서 스푼으로 떠먹으면 더 맛있어요'],url:'https://jaecheol.com/all'},
+  토마토:{emoji:'🍅',img:'https://images.unsplash.com/photo-1592921870789-04563d55041c?w=600&h=400&fit=crop&auto=format',sub:'조카님은 대저짭짤이 타입! 삼촌이 부산까지 가서 골라왔어요 ❤️',features:['짭짤하고 달콤한 맛이 동시에 나는 대저만의 특별한 토마토예요','부산 대저동에서만 자라는 토종 품종, 삼촌도 매년 제철 되면 꼭 챙겨요','껍질 얇고 과즙 많아서 한 입 베어물면 입 안에서 터져요'],url:'https://jaecheol.com/all'},
+  참외:{emoji:'🍈',img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=600&h=400&fit=crop&auto=format',sub:'조카님은 참외 타입! 한국 과일의 정수예요 🍈',features:['한국에서만 먹을 수 있는 제철 여름 과일이에요','달달한 향이 방에 가득 퍼질 만큼 향기로워요','삼촌이 줄기 색깔로 익은 것만 골라서 더 달아요'],url:'https://jaecheol.com/all'}
 };
 var JCQ_QS = [
   {q:'어떤 맛이 가장 끌리세요?',opts:[{e:'🍯',t:'진하고 달콤한 맛',s:{레드향:2,사과:2,참외:2}},{e:'🍋',t:'새콤달콤 균형 잡힌 맛',s:{천혜향:2,키위:2,토마토:1}},{e:'🌺',t:'향이 진하고 과일다운 맛',s:{한라봉:3,사과:1}},{e:'🌊',t:'시원하고 담백한 맛',s:{배:3,참외:1}}]},
@@ -178,7 +178,7 @@ function jcqShowResult(){
   document.getElementById('jcq-r-sub').textContent=d.sub;
   var li=''; d.features.forEach(function(f){li+='<li>'+f+'</li>';});
   document.getElementById('jcq-r-feat').innerHTML=li;
-  var btn=document.getElementById('jcq-r-buy'); btn.href=d.url; btn.textContent='🛒 '+winner+' 구매하러 가기';
+  var btn=document.getElementById('jcq-r-buy'); btn.dataset.url=d.url; btn.textContent='🛒 '+winner+' 구매하러 가기';
 }
 
 function jcqReset(){
