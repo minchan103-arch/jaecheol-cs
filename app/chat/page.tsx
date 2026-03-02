@@ -93,6 +93,7 @@ export default function ChatPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
+          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 300)}
           placeholder="메시지를 입력하세요..."
           className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-yellow-400"
         />
