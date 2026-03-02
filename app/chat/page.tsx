@@ -14,6 +14,25 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 키보드 올라올 때 실제 보이는 영역 높이로 컨테이너 조정 (iOS 대응)
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      if (containerRef.current) {
+        containerRef.current.style.height = vv.height + 'px';
+      }
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,7 +66,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col bg-white max-w-lg mx-auto shadow-lg" style={{height:'100dvh',maxHeight:'-webkit-fill-available'}}>
+    <div ref={containerRef} className="flex flex-col bg-white max-w-lg mx-auto shadow-lg" style={{height:'100dvh',maxHeight:'-webkit-fill-available'}}>
       {/* 헤더 */}
       <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
         <span className="text-3xl">🍊</span>
@@ -93,7 +112,7 @@ export default function ChatPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 300)}
+          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)}
           placeholder="메시지를 입력하세요..."
           className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-yellow-400"
         />
