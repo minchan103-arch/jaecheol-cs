@@ -38,31 +38,40 @@
 .jcq-r-badge{display:inline-block;background:#facc15;color:#111;font-size:11px;font-weight:700;padding:4px 14px;border-radius:999px;margin-bottom:10px}
 .jcq-r-name{font-size:28px;font-weight:900;color:#111;margin-bottom:6px}
 .jcq-r-sub{font-size:13px;color:#6b7280;margin-bottom:20px;line-height:1.6}
-.jcq-r-box{background:#f9fafb;border-radius:16px;padding:18px 20px;margin-bottom:20px}
-.jcq-r-box-title{font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:12px}
+.jcq-r-box{background:#fffbeb;border:1px solid #fef08a;border-radius:16px;padding:18px 20px;margin-bottom:20px}
+.jcq-r-box-title{font-size:11px;font-weight:700;color:#92400e;margin-bottom:12px}
 .jcq-r-box ul{list-style:none;display:flex;flex-direction:column;gap:8px}
 .jcq-r-box li{font-size:13px;color:#374151;display:flex;gap:8px;align-items:flex-start}
 .jcq-r-box li::before{content:"✓";color:#facc15;font-weight:900;flex-shrink:0;margin-top:1px}
 .jcq-buy{display:block;background:#facc15;color:#111;font-size:15px;font-weight:800;padding:16px;border-radius:999px;text-decoration:none;text-align:center;margin-bottom:10px;transition:background .15s}
 .jcq-buy:hover{background:#eab308}
-.jcq-share{display:block;background:#fff;border:2px solid #e5e7eb;color:#6b7280;font-size:13px;font-weight:600;padding:13px;border-radius:999px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color .15s}
-.jcq-share:hover{border-color:#facc15;color:#374151}
+/* 공유 시트 */
+.jcq-share-wrap{margin-bottom:10px}
+.jcq-share-title{font-size:11px;color:#9ca3af;text-align:center;margin-bottom:8px}
+.jcq-share-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.jcq-sb{background:#fff;border:2px solid #f3f4f6;border-radius:14px;padding:12px 6px;text-align:center;cursor:pointer;transition:border-color .15s;display:flex;flex-direction:column;align-items:center;gap:5px}
+.jcq-sb:hover{border-color:#facc15}
+.jcq-sb .si{font-size:22px}
+.jcq-sb .sl{font-size:11px;font-weight:600;color:#374151}
 .jcq-retry{display:block;background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;padding:8px;width:100%;text-align:center}
 .jcq-retry:hover{color:#6b7280}
+/* 복사 토스트 */
+.jcq-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#111;color:#fff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:999px;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:99999}
+.jcq-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 
 <div id="jcq">
 
   <!-- 인트로 -->
   <div class="jcq-intro" id="jcq-intro">
-    <span class="jcq-badge">🍊 제철삼촌 추천 테스트</span>
-    <h2 class="jcq-title">나에게 딱 맞는<br>제철과일은 뭘까요?</h2>
-    <p class="jcq-sub">5가지 질문으로 취향에 꼭 맞는<br>제철과일을 찾아드려요!</p>
+    <span class="jcq-badge">🍊 제철삼촌 과일 취향 테스트</span>
+    <h2 class="jcq-title">삼촌이 조카님 취향에<br>딱 맞는 과일 골라드릴게요</h2>
+    <p class="jcq-sub">새벽 경매장에서 직접 고른 제철과일 중에<br>조카님한테 딱 맞는 거 5가지만 골라봐요 😊</p>
 
     <div class="jcq-scroll" id="jcq-preview"></div>
 
-    <button class="jcq-cta" onclick="jcqStart()">10초만에 내 과일 찾기 →</button>
-    <p class="jcq-hint">8가지 제철과일 중 나에게 딱 맞는 것 🍓</p>
+    <button class="jcq-cta" onclick="jcqStart()">삼촌한테 추천받기 →</button>
+    <p class="jcq-hint">지금 제철인 과일 8가지 중에서 골라드려요 🍓</p>
   </div>
 
   <!-- 퀴즈 -->
@@ -77,18 +86,26 @@
   <div class="jcq-result" id="jcq-result">
     <img class="jcq-r-img" id="jcq-r-img" src="" alt="">
     <div style="text-align:center;margin-bottom:20px">
-      <span class="jcq-r-badge">추천 과일</span>
+      <span class="jcq-r-badge">🍊 삼촌 추천</span>
       <h3 class="jcq-r-name" id="jcq-r-name"></h3>
       <p class="jcq-r-sub" id="jcq-r-sub"></p>
     </div>
     <div class="jcq-r-box">
-      <div class="jcq-r-box-title">왜 이 과일이 추천됐을까요?</div>
+      <div class="jcq-r-box-title">삼촌이 이 과일을 추천한 이유</div>
       <ul id="jcq-r-feat"></ul>
     </div>
-    <a class="jcq-buy" id="jcq-r-buy" href="https://jaecheol.com" target="_blank">🛒 구매하러 가기</a>
-    <button class="jcq-share" id="jcq-r-share" onclick="jcqShare()">🔗 결과 공유하기</button>
-    <button class="jcq-retry" onclick="jcqReset()">다시 하기</button>
+    <a class="jcq-buy" id="jcq-r-buy" href="https://jaecheol.com" target="_blank">🛒 지금 바로 주문하기</a>
+    <div class="jcq-share-wrap">
+      <div class="jcq-share-title">결과 공유하기</div>
+      <div class="jcq-share-btns">
+        <button class="jcq-sb" onclick="jcqShareKakao()"><span class="si">💬</span><span class="sl">카카오톡</span></button>
+        <button class="jcq-sb" onclick="jcqShareInsta()"><span class="si">📸</span><span class="sl">인스타</span></button>
+        <button class="jcq-sb" id="jcq-url-btn" onclick="jcqShareUrl()"><span class="si">🔗</span><span class="sl">URL 복사</span></button>
+      </div>
+    </div>
+    <button class="jcq-retry" onclick="jcqReset()">↩ 다시 하기</button>
   </div>
+  <div class="jcq-toast" id="jcq-toast">링크가 복사됐어요! 🍊</div>
 </div>
 
 <script>
@@ -98,50 +115,50 @@
 var FRUITS = {
   레드향:{
     img:'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab12?w=600&h=400&fit=crop',
-    sub:'달콤하고 껍질 얇은 레드향이 딱이에요!',
-    features:['한라봉×천혜향 교배종, 두 과일의 장점만 모았어요','껍질이 얇아 까기 쉽고 즙이 풍부해요','당도가 높아 남녀노소 모두 좋아하는 스테디셀러예요'],
+    sub:'조카님은 레드향 타입! 삼촌이 딱 보면 알아요 🍊',
+    features:['삼촌이 새벽에 직접 고른 당도 높은 레드향이에요','한라봉×천혜향 교배종이라 두 과일의 장점을 다 가졌어요','껍질 얇고 즙 풍부해서 먹기 편하고 달달해요'],
     url:'https://jaecheol.com'
   },
   한라봉:{
     img:'https://images.unsplash.com/photo-1574856344991-aaa31b6f4ce3?w=600&h=400&fit=crop',
-    sub:'향 진하고 과육 탱탱한 한라봉이 딱이에요!',
-    features:['울퉁불퉁한 모양이 특징인 프리미엄 감귤이에요','향이 진하고 과육이 탱탱해서 씹는 맛이 있어요','선물용으로 가장 인기 있는 제품이에요'],
+    sub:'조카님 취향엔 한라봉이 딱이에요! 삼촌 보장 🙏',
+    features:['울퉁불퉁한 모양이지만 그 안에 진한 향이 꽉 찼어요','과육이 탱탱해서 씹을수록 맛이 나는 프리미엄 감귤이에요','선물하면 진짜 좋아해요. 삼촌도 매년 선물로 제일 많이 팔아요'],
     url:'https://jaecheol.com'
   },
   천혜향:{
     img:'https://images.unsplash.com/photo-1547514701-42782101795e?w=600&h=400&fit=crop',
-    sub:'새콤달콤 즙 풍부한 천혜향이 딱이에요!',
-    features:['껍질이 얇고 즙이 넘쳐흘러 먹을 때 시원해요','새콤달콤한 맛의 균형이 완벽해요','상큼한 향이 기분을 좋게 해줘요'],
+    sub:'조카님한테 천혜향이 딱이에요! 삼촌 픽 🍊',
+    features:['껍질 너무 얇아서 까기만 하면 즙이 터져요','새콤달콤한 맛 균형이 감귤 중에 최고라고 삼촌은 생각해요','향도 상큼해서 먹고 나서 기분이 좋아져요'],
     url:'https://jaecheol.com'
   },
   사과:{
     img:'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&h=400&fit=crop',
-    sub:'아삭아삭 달콤한 사과가 딱이에요!',
-    features:['한 입 베어물면 아삭하고 달콤한 과즙이 가득해요','식이섬유가 풍부해 든든한 간식으로 최고예요','냉장 보관하면 더욱 달콤하고 시원해요'],
+    sub:'조카님은 사과 타입! 삼촌이 아침부터 골라뒀어요 🍎',
+    features:['비파괴 당도 측정으로 달달한 것만 삼촌이 직접 골랐어요','아삭하고 과즙이 풍부해서 먹을 때마다 기분 좋아요','냉장고에 차갑게 두면 더 달고 맛있어요'],
     url:'https://jaecheol.com'
   },
   배:{
     img:'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=600&h=400&fit=crop',
-    sub:'시원하고 달콤한 배가 딱이에요!',
-    features:['과즙이 풍부하고 목 넘김이 시원해요','큼직하고 고급스러운 외관으로 선물용으로 최고예요','아삭한 식감과 청량한 달콤함이 특징이에요'],
+    sub:'조카님한텐 배가 딱이에요! 삼촌이 눈으로 골랐어요 🍐',
+    features:['과즙이 넘쳐서 한 조각 먹으면 목이 시원해지는 느낌이에요','큼직하고 윤기 나는 배 중에서 삼촌이 손선별했어요','선물하면 고급스러워서 받는 분이 진짜 좋아해요'],
     url:'https://jaecheol.com'
   },
   키위:{
     img:'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&h=400&fit=crop',
-    sub:'새콤달콤 영양 가득한 키위가 딱이에요!',
-    features:['비타민C가 레몬의 2배! 면역력 강화에 최고예요','새콤달콤한 맛이 입맛을 돋워줘요','한 개만 먹어도 하루 비타민C 섭취량을 채울 수 있어요'],
+    sub:'조카님한테 키위가 딱이에요! 영양은 삼촌이 책임져요 💚',
+    features:['비타민C가 레몬의 2배! 삼촌도 매일 하나씩 먹어요','새콤달콤해서 아침에 먹으면 하루가 상쾌하게 시작돼요','껍질째 쪼개서 스푼으로 떠먹으면 더 맛있어요'],
     url:'https://jaecheol.com'
   },
   토마토:{
     img:'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=600&h=400&fit=crop',
-    sub:'건강하고 맛있는 토마토가 딱이에요!',
-    features:['라이코펜이 풍부해 항산화 효과가 뛰어나요','달콤하고 새콤한 맛에 샐러드나 요리에 활용하기 좋아요','다이어트와 피부 건강에 도움이 되는 슈퍼푸드예요'],
+    sub:'조카님은 토마토 타입! 삼촌이 건강까지 생각했어요 ❤️',
+    features:['달고 새콤한 방울토마토, 삼촌이 직접 색깔 보고 골라요','라이코펜이 풍부해서 피부에도 좋고 다이어트에도 최고예요','그냥 먹어도, 샐러드에 넣어도 맛있는 만능 과일이에요'],
     url:'https://jaecheol.com'
   },
   참외:{
     img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=600&h=400&fit=crop',
-    sub:'향긋하고 달콤한 참외가 딱이에요!',
-    features:['한국 대표 여름 과일! 달콤한 향이 가득해요','아삭아삭한 식감과 시원한 달콤함이 특징이에요','엽산과 비타민이 풍부한 건강 과일이에요'],
+    sub:'조카님은 참외 타입! 한국 과일의 정수예요 🍈',
+    features:['한국에서만 먹을 수 있는 제철 여름 과일이에요','달달한 향이 방에 가득 퍼질 만큼 향기로워요','삼촌이 줄기 색깔로 익은 것만 골라서 더 달아요'],
     url:'https://jaecheol.com'
   }
 };
@@ -273,16 +290,44 @@ function jcqShowResult(){
   btn.textContent='🛒 '+winner+' 구매하러 가기';
 }
 
-function jcqShare(){
-  var btn=document.getElementById('jcq-r-share');
+function jcqShareKakao(){
   if(navigator.share){
-    navigator.share({title:'제철삼촌 과일 추천',text:'나에게 딱 맞는 제철과일 찾았어요!',url:location.href});
-  } else if(navigator.clipboard){
-    navigator.clipboard.writeText(location.href).then(function(){
-      btn.textContent='✅ 링크가 복사됐어요!';
-      setTimeout(function(){btn.textContent='🔗 결과 공유하기';},2000);
-    });
+    navigator.share({title:'제철삼촌 과일 추천 테스트',text:'나에게 딱 맞는 제철과일 찾았어요! 조카님도 해보세요 🍊',url:location.href});
+  } else {
+    jcqShareUrl();
   }
+}
+
+function jcqShareInsta(){
+  if(navigator.share){
+    navigator.share({title:'제철삼촌 과일 추천 테스트',text:'나에게 딱 맞는 제철과일 찾았어요! 조카님도 해보세요 🍊',url:location.href});
+  } else {
+    jcqShowToast('인스타 앱에서 직접 공유해 보세요 📸');
+  }
+}
+
+function jcqShareUrl(){
+  var url=location.href;
+  function showCopied(){jcqShowToast('링크가 복사됐어요! 🍊');}
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(showCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+  function fallbackCopy(){
+    var ta=document.createElement('textarea');
+    ta.value=url;ta.style.cssText='position:fixed;top:-9999px;opacity:0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showCopied();}catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+function jcqShowToast(msg){
+  var t=document.getElementById('jcq-toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
 }
 
 function jcqReset(){
