@@ -34,6 +34,8 @@ const STATUS_COLOR: Record<string, string> = {
   처리완료: 'bg-gray-100 text-gray-600',
 };
 
+const KAKAO_CHANNEL_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL || 'https://pf.kakao.com/_replace';
+
 export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,7 @@ export default function Dashboard() {
   const [filterPlatform, setFilterPlatform] = useState('전체');
   const [filterStatus, setFilterStatus] = useState('전체');
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [updatingRow, setUpdatingRow] = useState<string | null>(null);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -59,6 +62,23 @@ export default function Dashboard() {
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
+  const markDone = async (rowNum: string) => {
+    setUpdatingRow(rowNum);
+    try {
+      const res = await fetch('/api/sheets', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ row: rowNum, status: '처리완료' }),
+      });
+      if (!res.ok) throw new Error('업데이트 실패');
+      setRows(prev => prev.map(r => r.num === rowNum ? { ...r, status: '처리완료' } : r));
+    } catch (e) {
+      alert('처리완료 변경 실패: ' + (e as Error).message);
+    } finally {
+      setUpdatingRow(null);
+    }
+  };
+
   const filtered = rows.filter(r => {
     const p = filterPlatform === '전체' || r.platform === filterPlatform || PLATFORM_LABEL[r.platform] === filterPlatform;
     const s = filterStatus === '전체' || r.status === filterStatus;
@@ -69,6 +89,8 @@ export default function Dashboard() {
   const auto = rows.filter(r => r.status === '자동처리완료').length;
   const escalated = rows.filter(r => r.status === '카카오전달').length;
   const done = rows.filter(r => r.status === '처리완료').length;
+
+  const pendingEscalations = rows.filter(r => r.status === '카카오전달');
 
   const widgetLinks = [
     { label: '네이버 위젯', param: 'naver', color: 'text-green-600 border-green-300' },
@@ -108,6 +130,32 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+        {/* 카카오전달 대기 배너 */}
+        {pendingEscalations.length > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl px-5 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔔</span>
+              <div>
+                <p className="text-sm font-bold text-orange-700">
+                  카카오 채널 응대 대기 {pendingEscalations.length}건
+                </p>
+                <p className="text-xs text-orange-500 mt-0.5">
+                  AI가 처리하지 못한 문의입니다. 직접 응대 후 처리완료로 변경하세요.
+                </p>
+              </div>
+            </div>
+            <a
+              href={KAKAO_CHANNEL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-yellow-400 text-gray-800 text-sm font-bold px-4 py-2 rounded-lg hover:bg-yellow-500 transition-colors whitespace-nowrap"
+            >
+              💬 카카오 채널 열기
+            </a>
+          </div>
+        )}
+
         {/* 통계 카드 */}
         <div className="grid grid-cols-4 gap-4">
           {[
@@ -197,7 +245,11 @@ export default function Dashboard() {
                     <tr
                       key={i}
                       onClick={() => setExpandedRow(expandedRow === i ? null : i)}
-                      className="border-b hover:bg-orange-50 cursor-pointer transition-colors"
+                      className={`border-b cursor-pointer transition-colors ${
+                        row.status === '카카오전달'
+                          ? 'border-l-4 border-l-orange-400 hover:bg-orange-50'
+                          : 'hover:bg-orange-50'
+                      }`}
                     >
                       <td className="px-4 py-3 text-gray-400">{row.num}</td>
                       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{row.timestamp}</td>
@@ -236,6 +288,27 @@ export default function Dashboard() {
                             <div className="col-span-2 text-xs text-gray-400">
                               세션ID: {row.sessionId}
                             </div>
+                            {/* 카카오전달 상태일 때 액션 버튼 */}
+                            {row.status === '카카오전달' && (
+                              <div className="col-span-2 flex gap-3 pt-2 border-t border-orange-100">
+                                <a
+                                  href={KAKAO_CHANNEL_URL}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                  className="flex items-center gap-2 bg-yellow-400 text-gray-800 text-sm font-bold px-4 py-2 rounded-lg hover:bg-yellow-500 transition-colors"
+                                >
+                                  💬 카카오 채널에서 응대하기
+                                </a>
+                                <button
+                                  onClick={e => { e.stopPropagation(); markDone(row.num); }}
+                                  disabled={updatingRow === row.num}
+                                  className="flex items-center gap-2 bg-gray-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                >
+                                  {updatingRow === row.num ? '처리 중...' : '✅ 처리완료로 변경'}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -47,13 +47,12 @@ function getSheet() {
   return sheet;
 }
 
-// GET 요청 - 조회 또는 추가
-// POST redirect 이슈로 인해 모든 요청을 GET으로 처리
+// GET 요청 - action 파라미터로 분기
 function doGet(e) {
   try {
-    if (e.parameter.action === 'append') {
-      return appendRow(e);
-    }
+    var action = e.parameter.action;
+    if (action === 'append') return appendRow(e);
+    if (action === 'updateStatus') return updateStatus(e);
     return readRows();
   } catch (err) {
     return jsonResponse({ error: err.message });
@@ -67,7 +66,7 @@ function appendRow(e) {
 
   var body = JSON.parse(raw);
   var sheet = getSheet();
-  var rowNum = sheet.getLastRow(); // 헤더 포함 현재 마지막 행 = 다음 번호
+  var rowNum = sheet.getLastRow();
 
   sheet.appendRow([
     rowNum,
@@ -90,6 +89,29 @@ function appendRow(e) {
   }
 
   return jsonResponse({ success: true });
+}
+
+// 상태 업데이트 (?action=updateStatus&row=번호&status=처리완료)
+function updateStatus(e) {
+  var rowNum = e.parameter.row;
+  var status = e.parameter.status;
+  if (!rowNum || !status) return jsonResponse({ success: false, error: '파라미터 누락' });
+
+  var sheet = getSheet();
+  var lastRow = sheet.getLastRow();
+
+  for (var i = 2; i <= lastRow; i++) {
+    var num = String(sheet.getRange(i, 1).getValue());
+    if (num === String(rowNum)) {
+      sheet.getRange(i, 7).setValue(status);
+      if (status === '처리완료') {
+        sheet.getRange(i, 7).setBackground('#E3F2FD'); // 연파랑
+      }
+      return jsonResponse({ success: true });
+    }
+  }
+
+  return jsonResponse({ success: false, error: '해당 행을 찾을 수 없음' });
 }
 
 // 전체 데이터 조회 (대시보드용)

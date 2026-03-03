@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-// 카카오톡 채널 개설 후 실제 URL로 교체하세요 (예: https://pf.kakao.com/_xxxxx/chat)
-const KAKAO_URL = 'https://pf.kakao.com/_replace';
+const KAKAO_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL || 'https://pf.kakao.com/_replace';
 
 interface Message {
   role: 'user' | 'assistant';
