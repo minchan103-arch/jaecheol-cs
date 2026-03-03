@@ -139,7 +139,7 @@ export default function ChatPage() {
                     <button
                       key={qr.label}
                       onClick={() => sendMessage(`${qr.emoji} ${qr.label}`)}
-                      className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm active:scale-95 transition-all"
+                      className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm active:scale-95 transition-all min-h-[44px]"
                       style={{ touchAction: 'manipulation' }}
                     >
                       <span>{qr.emoji}</span>

@@ -110,7 +110,7 @@ export default function ChatWidget({ platform, panelMode = false }: { platform: 
               </a>
               <button
                 onClick={handleClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-orange-600 transition-colors text-white text-lg"
+                className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-orange-600 transition-colors text-white text-lg"
                 aria-label="닫기"
               >
                 ✕
