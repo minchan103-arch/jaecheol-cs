@@ -28,6 +28,7 @@ export default function ChatPage() {
   const [showQuickReplies, setShowQuickReplies] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const sessionId = useRef<string>(crypto.randomUUID());
 
   // 키보드 올라올 때 실제 보이는 영역 높이로 컨테이너 조정 (iOS 대응)
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function ChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text.trim(), history }),
+        body: JSON.stringify({ message: text.trim(), history, platform: 'mall', sessionId: sessionId.current }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply, escalated: data.escalated }]);

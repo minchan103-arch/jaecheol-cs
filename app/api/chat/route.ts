@@ -1,52 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { CS_SYSTEM_PROMPT } from '@/lib/cs-prompt';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-async function logToSheets(userMessage: string, botReply: string, escalated: boolean) {
-  const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
-  if (!webhookUrl) return;
-  try {
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userMessage, botReply, escalated }),
-    });
-  } catch {
-    // 로깅 실패는 무시
-  }
-}
+import { getChatResponse, ChatMessage } from '@/lib/claude';
+import { appendConversation, initSheet } from '@/lib/sheets';
+import { sendKakaoEscalationAlert } from '@/lib/kakao';
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history = [] } = await req.json();
+    const body = await req.json();
+    const {
+      message,
+      platform = '자사몰',
+      sessionId = crypto.randomUUID(),
+      history = [] as ChatMessage[],
+    } = body;
 
-    const messages = [
-      ...history,
-      { role: 'user' as const, content: message },
-    ];
-
-    const result = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: CS_SYSTEM_PROMPT,
-      messages,
-    });
-
-    const text = result.content[0].type === 'text' ? result.content[0].text : '';
-    const isEscalate = text.startsWith('ESCALATE:');
-    const reply = isEscalate ? text.replace('ESCALATE:', '').trim() : text;
-
-    logToSheets(message, reply, isEscalate); // fire-and-forget
-
-    if (isEscalate) {
-      console.log(`[에스컬레이션 필요] 웹사이트 채팅 - 메시지: "${message}"`);
+    if (!message?.trim()) {
+      return NextResponse.json({ error: '메시지를 입력해주세요.' }, { status: 400 });
     }
 
-    return NextResponse.json({ reply, escalated: isEscalate });
+    // 1. Claude로 답변 생성
+    const { reply, escalate } = await getChatResponse(message, history);
+
+    // 2. escalate 시 카카오톡 나에게 보내기 알림
+    let kakaoSent = false;
+    if (escalate) {
+      kakaoSent = await sendKakaoEscalationAlert({ platform, sessionId, message })
+        .catch(() => false);
+    }
+
+    // 3. Google Sheets 기록 (await로 완료 보장, 실패해도 응답은 정상 반환)
+    try {
+      await initSheet();
+      await appendConversation({
+        platform,
+        sessionId,
+        message,
+        reply,
+        status: escalate ? '카카오전달' : '자동처리완료',
+        kakaoSent,
+      });
+    } catch (e) {
+      console.error('Sheets 기록 오류:', e);
+    }
+
+    return NextResponse.json({ reply, escalated: escalate, sessionId });
 
   } catch (error) {
     console.error('채팅 API 오류:', error);

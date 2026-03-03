@@ -3,6 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* 제철삼촌 브랜드 컬러 (jaecheol.com 기준) */
+  --brand-primary: #FF4910;       /* CTA 버튼, 강조 */
+  --brand-orange-light: #FF6B35;  /* 태그, 뱃지, 배경 강조 */
+  --brand-text: #212121;          /* 본문 텍스트 */
+  --brand-surface: #F5F5F5;       /* 카드, 입력창 배경 */
+  --brand-disabled: #9E9E9E;      /* 비활성 요소 */
 }
 
 @theme inline {
