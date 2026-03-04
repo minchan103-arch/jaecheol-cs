@@ -81,3 +81,59 @@ export async function sendKakaoEscalationAlert(inquiry: {
 
   return true;
 }
+
+// 주간박스 입고 알림 (관리자 본인에게 발송 → 추후 채널 메시지로 확장)
+export async function sendWeeklyBoxAlert(items: {
+  name: string;
+  price: string;
+  deadline: string;
+  orderUrl: string;
+}[]): Promise<boolean> {
+  const accessToken = await refreshAccessToken();
+  if (!accessToken) {
+    console.warn('카카오톡 미설정: KAKAO_REST_API_KEY / KAKAO_REFRESH_TOKEN 확인 필요');
+    return false;
+  }
+
+  if (!items.length) return false;
+
+  const itemLines = items.map(it => `🍊 ${it.name} — ${it.price}`).join('\n');
+  const deadline = items[0].deadline || '미정';
+  const orderUrl = items[0].orderUrl || 'https://jaecheol.com/all';
+
+  const text = [
+    '📦 [이번 주 제철삼촌 박스]',
+    '',
+    itemLines,
+    '',
+    `⏰ 마감: ${deadline}`,
+    '',
+    '👉 지금 바로 예약하세요!',
+  ].join('\n');
+
+  const res = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      template_object: JSON.stringify({
+        object_type: 'text',
+        text,
+        link: {
+          web_url: orderUrl,
+          mobile_web_url: orderUrl,
+        },
+        button_title: '예약하러 가기 🍊',
+      }),
+    }),
+  });
+
+  if (!res.ok) {
+    console.error('주간박스 알림 전송 실패:', await res.text());
+    return false;
+  }
+
+  return true;
+}

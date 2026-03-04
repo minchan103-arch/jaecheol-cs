@@ -110,6 +110,13 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="/weekly-box"
+            target="_blank"
+            className="text-xs border rounded px-2 py-1 text-orange-600 border-orange-300 hover:bg-orange-50"
+          >
+            📦 주간박스 ↗
+          </a>
           {widgetLinks.map(w => (
             <a
               key={w.param}
@@ -185,6 +192,16 @@ export default function Dashboard() {
                 </code>
               </div>
             ))}
+            <div className="pt-2 border-t">
+              <p className="text-gray-500 mb-1 font-medium">📦 주간박스 미리보기 (iframe)</p>
+              <code className="block bg-gray-50 p-2 rounded text-gray-600 break-all">
+                {`<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/weekly-box" width="100%" height="800" frameborder="0" style="max-width:480px"></iframe>`}
+              </code>
+              <p className="text-gray-500 mb-1 mt-3 font-medium">📦 주간박스 미리보기 (링크)</p>
+              <code className="block bg-gray-50 p-2 rounded text-gray-600 break-all">
+                {`<a href="${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/weekly-box" target="_blank">이번 주 박스 보기 🍊</a>`}
+              </code>
+            </div>
           </div>
         </details>
 

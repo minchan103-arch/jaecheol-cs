@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { CS_SYSTEM_PROMPT } from './cs-prompt';
+import { getWeeklyBox, getStockStatus } from './weekly-box';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -14,10 +15,46 @@ export interface ChatResult {
   escalateReason: string;
 }
 
+const FRUIT_KEYWORDS = ['과일', '제철', '뭐 들어', '입고', '이번 주', '이번주', '박스', '뭐 있', '어떤 과일', '레드향', '한라봉', '천혜향', '딸기', '사과', '귤', '감귤', '예약', '주문'];
+
+function matchesFruitQuery(message: string): boolean {
+  return FRUIT_KEYWORDS.some(kw => message.includes(kw));
+}
+
+async function buildWeeklyBoxContext(): Promise<string> {
+  try {
+    const data = await getWeeklyBox();
+    if (!data.items.length) {
+      return '\n\n[이번 주 박스 정보]\n현재 이번 주 박스를 준비 중입니다. 아직 입고 과일이 확정되지 않았어요.';
+    }
+
+    const lines = data.items.map(item => {
+      const status = getStockStatus(item);
+      const badge = status === 'soldout' ? '(마감)' : status === 'closing' ? '(마감임박🔥)' : '';
+      return `- ${item.name} | 산지: ${item.origin} | ${item.price} ${badge}${item.orderUrl ? ` | 주문: ${item.orderUrl}` : ''}`;
+    });
+
+    return `\n\n[이번 주 박스 정보 - 실시간 데이터]
+마감일: ${data.deadline}
+${lines.join('\n')}
+
+위 정보를 활용해서 자연스럽게 답변해. 마감 임박 과일은 서두르라고 알려주고, 마감된 과일은 다음 주를 안내해. 주문 링크도 함께 알려줘.`;
+  } catch {
+    return '';
+  }
+}
+
 export async function getChatResponse(
   message: string,
   history: ChatMessage[] = []
 ): Promise<ChatResult> {
+  let systemPrompt = CS_SYSTEM_PROMPT;
+
+  if (matchesFruitQuery(message)) {
+    const weeklyContext = await buildWeeklyBoxContext();
+    systemPrompt += weeklyContext;
+  }
+
   const messages = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user' as const, content: message },
@@ -26,7 +63,7 @@ export async function getChatResponse(
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
-    system: CS_SYSTEM_PROMPT,
+    system: systemPrompt,
     messages,
   });
 

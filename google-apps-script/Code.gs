@@ -14,6 +14,12 @@
 
 var SHEET_NAME = '문의내역';
 
+// 주간박스 미리보기
+var WEEKLY_BOX_SHEET = '주간박스';
+var WEEKLY_BOX_HEADERS = [
+  '과일명', '산지', '가격', '이미지URL', '재고수량', '총재고', '마감일', '주문링크', '표시여부'
+];
+
 var HEADERS = [
   '번호', '타임스탬프', '플랫폼', '세션ID',
   '고객문의', '챗봇답변', '처리상태', '카카오전달', '담당자메모'
@@ -53,6 +59,7 @@ function doGet(e) {
     var action = e.parameter.action;
     if (action === 'append') return appendRow(e);
     if (action === 'updateStatus') return updateStatus(e);
+    if (action === 'readWeeklyBox') return readWeeklyBox();
     return readRows();
   } catch (err) {
     return jsonResponse({ error: err.message });
@@ -140,6 +147,72 @@ function readRows() {
   });
 
   return jsonResponse({ rows: rows });
+}
+
+// 주간박스 시트 가져오기 (없으면 자동 생성)
+function getWeeklyBoxSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(WEEKLY_BOX_SHEET);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(WEEKLY_BOX_SHEET);
+    sheet.appendRow(WEEKLY_BOX_HEADERS);
+
+    var headerRange = sheet.getRange(1, 1, 1, WEEKLY_BOX_HEADERS.length);
+    headerRange.setBackground('#FF6B35');
+    headerRange.setFontColor('#FFFFFF');
+    headerRange.setFontWeight('bold');
+    sheet.setFrozenRows(1);
+
+    sheet.setColumnWidth(1, 100);
+    sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 120);
+    sheet.setColumnWidth(4, 250);
+    sheet.setColumnWidth(5, 80);
+    sheet.setColumnWidth(6, 80);
+    sheet.setColumnWidth(7, 120);
+    sheet.setColumnWidth(8, 250);
+    sheet.setColumnWidth(9, 80);
+  }
+
+  return sheet;
+}
+
+// 주간박스 데이터 조회 (?action=readWeeklyBox)
+function readWeeklyBox() {
+  var sheet = getWeeklyBoxSheet();
+  var lastRow = sheet.getLastRow();
+
+  if (lastRow <= 1) {
+    return jsonResponse({ items: [], deadline: '' });
+  }
+
+  var data = sheet.getRange(2, 1, lastRow - 1, WEEKLY_BOX_HEADERS.length).getValues();
+  var items = [];
+  var deadline = '';
+
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var visible = String(row[8]).toUpperCase();
+    if (visible !== 'Y') continue;
+
+    items.push({
+      name: String(row[0] || ''),
+      origin: String(row[1] || ''),
+      price: String(row[2] || ''),
+      imageUrl: String(row[3] || ''),
+      stock: Number(row[4]) || 0,
+      totalStock: Number(row[5]) || 0,
+      deadline: String(row[6] || ''),
+      orderUrl: String(row[7] || '')
+    });
+
+    if (!deadline && String(row[6])) {
+      deadline = String(row[6]);
+    }
+  }
+
+  return jsonResponse({ items: items, deadline: deadline });
 }
 
 function jsonResponse(data) {

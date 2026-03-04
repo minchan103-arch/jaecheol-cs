@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "qa": "playwright test --project=모바일-세로",
+    "qa:all": "playwright test",
+    "qa:report": "playwright show-report tests/qa/report"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -15,6 +18,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
