@@ -26,6 +26,13 @@ function getStockStatus(item: WeeklyBoxItem): StockStatus {
   return 'available';
 }
 
+function toDirectImageUrl(url: string): string {
+  if (!url) return '';
+  const match = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (match) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  return url;
+}
+
 function formatDeadline(dateStr: string): string {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -124,7 +131,7 @@ export default function WeeklyBoxPage() {
                       <span className="text-6xl">🍊</span>
                     ) : (
                       <img
-                        src={item.imageUrl}
+                        src={toDirectImageUrl(item.imageUrl)}
                         alt={item.name}
                         className="w-full h-full object-cover"
                         onError={() => {
