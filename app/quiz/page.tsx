@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 type FruitKey = '레드향' | '한라봉' | '천혜향' | '사과' | '배' | '키위' | '토마토' | '참외';
 
@@ -217,7 +218,7 @@ export default function QuizPage() {
           <div className="flex gap-3 overflow-x-auto w-full pb-2 mb-8" style={{ scrollbarWidth: 'none' }}>
             {ALL_FRUITS.map(k => (
               <div key={k} className="flex-none w-24 rounded-2xl overflow-hidden bg-white shadow-md text-center">
-                <img src={FRUITS[k].img} alt={k} className="w-24 h-20 object-cover block"
+                <Image src={FRUITS[k].img} alt={k} width={96} height={80} className="w-24 h-20 object-cover block"
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 <div className="text-xs font-bold text-gray-700 py-2">{k}</div>
               </div>
@@ -264,12 +265,13 @@ export default function QuizPage() {
       {phase === 'result' && winner && (
         <div className="flex-1 flex flex-col p-6 bg-gray-50">
           {/* 이미지 */}
-          <div className="w-full rounded-2xl overflow-hidden mb-5 shadow-lg" style={{height:'320px'}}>
+          <div className="relative w-full rounded-2xl overflow-hidden mb-5 shadow-lg" style={{height:'320px'}}>
             {!imgError ? (
-              <img
+              <Image
                 src={FRUITS[winner].img}
                 alt={winner}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
                 onError={() => setImgError(true)}
               />
             ) : (

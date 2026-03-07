@@ -43,18 +43,18 @@
 ---
 
 <!-- AUTO-SYNC-START -->
-*留덉?留??먮룞 ?숆린?? 2026-03-04 14:33*
+*留덉?留??먮룞 ?숆린?? 2026-03-06 10:52*
 
-**?뚯뒪 ?뚯씪 ?꾪솴:** TSX 9 媛?/ TS 16 媛?
+**?뚯뒪 ?뚯씪 ?꾪솴:** TSX 9 媛?/ TS 17 媛?
 **理쒓렐 ?섏젙 ?뚯씪 (?곸쐞 10媛?:**
+- `CLAUDE.md` ??2026-03-05 10:34
+- `app/weekly-box/page.tsx` ??2026-03-04 16:38
+- `.env.local` ??2026-03-04 16:33
+- `app/api/weekly-box/notify/route.ts` ??2026-03-04 14:40
+- `lib/kakao.ts` ??2026-03-04 14:39
+- `app/page.tsx` ??2026-03-04 14:39
+- `lib/claude.ts` ??2026-03-04 14:38
+- `docs/progress.md` ??2026-03-04 14:33
 - `next-env.d.ts` ??2026-03-04 12:41
 - `next.config.ts` ??2026-03-04 12:40
-- `app/weekly-box/page.tsx` ??2026-03-04 12:40
-- `app/api/weekly-box/route.ts` ??2026-03-04 12:39
-- `lib/weekly-box.ts` ??2026-03-04 12:39
-- `google-apps-script/Code.gs` ??2026-03-04 12:39
-- `docs/2025-01-주간박스미리보기_프로젝트기획.md` ??2026-03-04 12:31
-- `tests/qa/live-site.spec.ts` ??2026-03-04 06:16
-- `test-results/.last-run.json` ??2026-03-04 06:16
-- `tests/qa/report/index.html` ??2026-03-04 06:16
 <!-- AUTO-SYNC-END -->

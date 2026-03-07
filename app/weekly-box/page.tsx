@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 
 interface WeeklyBoxItem {
   name: string;
@@ -130,10 +131,12 @@ export default function WeeklyBoxPage() {
                     {imgErrors.has(i) ? (
                       <span className="text-6xl">🍊</span>
                     ) : (
-                      <img
+                      <Image
                         src={toDirectImageUrl(item.imageUrl)}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        unoptimized
+                        className="object-cover"
                         onError={() => {
                           setImgErrors(prev => new Set(prev).add(i));
                         }}

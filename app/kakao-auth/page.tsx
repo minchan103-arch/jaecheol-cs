@@ -16,20 +16,19 @@ export default function KakaoAuthPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const c = params.get('code');
-    if (c) setCode(c);
-  }, []);
+    if (!c) return;
+    setCode(c);
 
-  useEffect(() => {
-    if (!code) return;
+    const redirectUri = `${window.location.origin}/kakao-auth`;
     setLoading(true);
-    fetch(`/api/kakao-token?code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`)
+    fetch(`/api/kakao-token?code=${encodeURIComponent(c)}&redirect_uri=${encodeURIComponent(redirectUri)}`)
       .then(r => r.json())
       .then(data => {
         setResult(JSON.stringify(data, null, 2));
       })
       .catch(e => setError(String(e)))
       .finally(() => setLoading(false));
-  }, [code]);
+  }, []);
 
   const startAuth = () => {
     const url = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=talk_message`;

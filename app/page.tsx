@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 
 interface Row {
   num: string;
@@ -44,6 +44,9 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState('전체');
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [updatingRow, setUpdatingRow] = useState<string | null>(null);
+  const [origin, setOrigin] = useState('https://your-domain.com');
+
+  useEffect(() => { setOrigin(window.location.origin); }, []);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -110,6 +113,12 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="/office"
+            className="text-xs border rounded px-2 py-1 text-gray-600 border-gray-300 hover:bg-gray-50"
+          >
+            🏢 내부 관리
+          </a>
           <a
             href="/weekly-box"
             target="_blank"
@@ -188,18 +197,18 @@ export default function Dashboard() {
               <div key={w.param}>
                 <p className="text-gray-500 mb-1 font-medium">{w.label} (iframe)</p>
                 <code className="block bg-gray-50 p-2 rounded text-gray-600 break-all">
-                  {`<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/widget?platform=${w.param}" width="380" height="600" frameborder="0"></iframe>`}
+                  {`<iframe src="${origin}/widget?platform=${w.param}" width="380" height="600" frameborder="0"></iframe>`}
                 </code>
               </div>
             ))}
             <div className="pt-2 border-t">
               <p className="text-gray-500 mb-1 font-medium">📦 주간박스 미리보기 (iframe)</p>
               <code className="block bg-gray-50 p-2 rounded text-gray-600 break-all">
-                {`<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/weekly-box" width="100%" height="800" frameborder="0" style="max-width:480px"></iframe>`}
+                {`<iframe src="${origin}/weekly-box" width="100%" height="800" frameborder="0" style="max-width:480px"></iframe>`}
               </code>
               <p className="text-gray-500 mb-1 mt-3 font-medium">📦 주간박스 미리보기 (링크)</p>
               <code className="block bg-gray-50 p-2 rounded text-gray-600 break-all">
-                {`<a href="${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/weekly-box" target="_blank">이번 주 박스 보기 🍊</a>`}
+                {`<a href="${origin}/weekly-box" target="_blank">이번 주 박스 보기 🍊</a>`}
               </code>
             </div>
           </div>
@@ -258,9 +267,8 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {filtered.map((row, i) => (
-                  <>
+                  <Fragment key={i}>
                     <tr
-                      key={i}
                       onClick={() => setExpandedRow(expandedRow === i ? null : i)}
                       className={`border-b cursor-pointer transition-colors ${
                         row.status === '카카오전달'
@@ -330,7 +338,7 @@ export default function Dashboard() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
