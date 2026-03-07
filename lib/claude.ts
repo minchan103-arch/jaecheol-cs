@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { CS_SYSTEM_PROMPT } from './cs-prompt';
 import { getWeeklyBox, getStockStatus } from './weekly-box';
+import { buildProfilePrompt } from './profile-prompt';
+import type { ProfileRow } from './profile';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -44,15 +46,30 @@ ${lines.join('\n')}
   }
 }
 
+export interface ProfileContext {
+  profile: ProfileRow | null;
+  isFirstMessage: boolean;
+}
+
+export interface ChatResultWithProfile extends ChatResult {
+  extractedProfile?: Record<string, string>;
+}
+
 export async function getChatResponse(
   message: string,
-  history: ChatMessage[] = []
-): Promise<ChatResult> {
+  history: ChatMessage[] = [],
+  profileContext?: ProfileContext
+): Promise<ChatResultWithProfile> {
   let systemPrompt = CS_SYSTEM_PROMPT;
 
   if (matchesFruitQuery(message)) {
     const weeklyContext = await buildWeeklyBoxContext();
     systemPrompt += weeklyContext;
+  }
+
+  // 프로필 컨텍스트 주입
+  if (profileContext) {
+    systemPrompt += buildProfilePrompt(profileContext.profile, profileContext.isFirstMessage);
   }
 
   const messages = [
@@ -67,14 +84,24 @@ export async function getChatResponse(
     messages,
   });
 
-  const text =
+  let text =
     response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+
+  // PROFILE_DATA 태그 추출 (조카님에게 보이지 않는 시스템 태그)
+  let extractedProfile: Record<string, string> | undefined;
+  const profileMatch = text.match(/\nPROFILE_DATA:(\{.*\})\s*$/);
+  if (profileMatch) {
+    try {
+      extractedProfile = JSON.parse(profileMatch[1]);
+      text = text.replace(/\nPROFILE_DATA:\{.*\}\s*$/, '').trim();
+    } catch { /* 파싱 실패 무시 */ }
+  }
 
   // cs-prompt.ts 형식에 맞춰 ESCALATE: 접두사로 에스컬레이션 판단
   if (text.startsWith('ESCALATE:')) {
     const reply = text.slice('ESCALATE:'.length).trim();
-    return { reply, escalate: true, escalateReason: '에스컬레이션 필요' };
+    return { reply, escalate: true, escalateReason: '에스컬레이션 필요', extractedProfile };
   }
 
-  return { reply: text, escalate: false, escalateReason: '' };
+  return { reply: text, escalate: false, escalateReason: '', extractedProfile };
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
+import { findProfile, saveProfile, updateProfile } from '@/lib/profile';
 
 // --- IP 기반 Rate Limiter (슬라이딩 윈도우) ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1분
@@ -71,17 +72,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '메시지를 입력해주세요.' }, { status: 400 });
     }
 
-    // 1. Claude로 답변 생성
-    const { reply, escalate } = await getChatResponse(message, history);
+    // 1. 프로필 조회
+    const profile = await findProfile({ sessionId }).catch(() => null);
+    const isFirstMessage = history.length === 0;
 
-    // 2. escalate 시 카카오톡 나에게 보내기 알림
+    // 2. Claude로 답변 생성 (프로필 컨텍스트 포함)
+    const { reply, escalate, extractedProfile } = await getChatResponse(
+      message, history, { profile, isFirstMessage }
+    );
+
+    // 3. 추출된 프로필 데이터 저장
+    if (extractedProfile && Object.keys(extractedProfile).length > 0) {
+      try {
+        if (profile) {
+          await updateProfile(profile.profileId, { ...extractedProfile, sessionIds: sessionId });
+        } else {
+          await saveProfile({
+            channel: platform,
+            sessionIds: sessionId,
+            collectionMethod: 'chatbot',
+            ...extractedProfile,
+          });
+        }
+      } catch (e) {
+        console.error('프로필 저장 오류:', e);
+      }
+    }
+
+    // 4. escalate 시 카카오톡 나에게 보내기 알림
     let kakaoSent = false;
     if (escalate) {
       kakaoSent = await sendKakaoEscalationAlert({ platform, sessionId, message })
         .catch(() => false);
     }
 
-    // 3. Google Sheets 기록 (await로 완료 보장, 실패해도 응답은 정상 반환)
+    // 5. Google Sheets 기록 (await로 완료 보장, 실패해도 응답은 정상 반환)
     try {
       await initSheet();
       await appendConversation({

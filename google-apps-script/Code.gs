@@ -16,6 +16,13 @@ var SHEET_NAME = '문의내역';
 
 // 주간박스 미리보기
 var WEEKLY_BOX_SHEET = '주간박스';
+
+// 조카 프로필
+var PROFILE_SHEET = '조카프로필';
+var PROFILE_HEADERS = [
+  '프로필ID', '생성일', '수정일', '채널', '카카오ID', '전화번호', '닉네임',
+  '직업', '연령대', '구매목적', '맛취향', '알림선호', '퀴즈결과', '수집방법', '세션IDs', '메모'
+];
 var WEEKLY_BOX_HEADERS = [
   '과일명', '산지', '가격', '이미지URL', '재고수량', '총재고', '마감일', '주문링크', '표시여부'
 ];
@@ -60,6 +67,10 @@ function doGet(e) {
     if (action === 'append') return appendRow(e);
     if (action === 'updateStatus') return updateStatus(e);
     if (action === 'readWeeklyBox') return readWeeklyBox();
+    if (action === 'findProfile') return findProfile(e);
+    if (action === 'appendProfile') return appendProfile(e);
+    if (action === 'updateProfile') return updateProfile(e);
+    if (action === 'readProfiles') return readProfiles();
     return readRows();
   } catch (err) {
     return jsonResponse({ error: err.message });
@@ -213,6 +224,200 @@ function readWeeklyBox() {
   }
 
   return jsonResponse({ items: items, deadline: deadline });
+}
+
+// ============================================================
+// 조카 프로필 관련 함수
+// ============================================================
+
+function getProfileSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PROFILE_SHEET);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(PROFILE_SHEET);
+    sheet.appendRow(PROFILE_HEADERS);
+
+    var headerRange = sheet.getRange(1, 1, 1, PROFILE_HEADERS.length);
+    headerRange.setBackground('#FF6B35');
+    headerRange.setFontColor('#FFFFFF');
+    headerRange.setFontWeight('bold');
+    sheet.setFrozenRows(1);
+
+    sheet.setColumnWidth(1, 80);   // 프로필ID
+    sheet.setColumnWidth(2, 150);  // 생성일
+    sheet.setColumnWidth(3, 150);  // 수정일
+    sheet.setColumnWidth(4, 80);   // 채널
+    sheet.setColumnWidth(5, 120);  // 카카오ID
+    sheet.setColumnWidth(6, 120);  // 전화번호
+    sheet.setColumnWidth(7, 100);  // 닉네임
+    sheet.setColumnWidth(8, 80);   // 직업
+    sheet.setColumnWidth(9, 60);   // 연령대
+    sheet.setColumnWidth(10, 80);  // 구매목적
+    sheet.setColumnWidth(11, 80);  // 맛취향
+    sheet.setColumnWidth(12, 80);  // 알림선호
+    sheet.setColumnWidth(13, 80);  // 퀴즈결과
+    sheet.setColumnWidth(14, 80);  // 수집방법
+    sheet.setColumnWidth(15, 200); // 세션IDs
+    sheet.setColumnWidth(16, 200); // 메모
+  }
+
+  return sheet;
+}
+
+function rowToProfile(row) {
+  return {
+    profileId: String(row[0] || ''),
+    createdAt: String(row[1] || ''),
+    updatedAt: String(row[2] || ''),
+    channel: String(row[3] || ''),
+    kakaoId: String(row[4] || ''),
+    phone: String(row[5] || ''),
+    nickname: String(row[6] || ''),
+    occupation: String(row[7] || ''),
+    ageRange: String(row[8] || ''),
+    purpose: String(row[9] || ''),
+    taste: String(row[10] || ''),
+    notification: String(row[11] || ''),
+    quizResult: String(row[12] || ''),
+    collectionMethod: String(row[13] || ''),
+    sessionIds: String(row[14] || ''),
+    memo: String(row[15] || '')
+  };
+}
+
+// 프로필 검색 (?action=findProfile&kakaoId=xxx OR &phone=xxx OR &sessionId=xxx)
+function findProfile(e) {
+  var kakaoId = e.parameter.kakaoId || '';
+  var phone = e.parameter.phone || '';
+  var sessionId = e.parameter.sessionId || '';
+
+  if (!kakaoId && !phone && !sessionId) {
+    return jsonResponse({ found: false, error: '검색 조건 없음' });
+  }
+
+  var sheet = getProfileSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return jsonResponse({ found: false });
+
+  var data = sheet.getRange(2, 1, lastRow - 1, PROFILE_HEADERS.length).getValues();
+
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    // 카카오ID 매칭 (col E = index 4)
+    if (kakaoId && String(row[4]) === kakaoId) {
+      return jsonResponse({ found: true, profile: rowToProfile(row) });
+    }
+    // 전화번호 매칭 (col F = index 5)
+    if (phone && String(row[5]) === phone) {
+      return jsonResponse({ found: true, profile: rowToProfile(row) });
+    }
+    // 세션ID 매칭 (col O = index 14, 쉼표 구분 목록)
+    if (sessionId) {
+      var sessions = String(row[14] || '').split(',');
+      for (var j = 0; j < sessions.length; j++) {
+        if (sessions[j].trim() === sessionId) {
+          return jsonResponse({ found: true, profile: rowToProfile(row) });
+        }
+      }
+    }
+  }
+
+  return jsonResponse({ found: false });
+}
+
+// 프로필 추가 (?action=appendProfile&data=JSON)
+function appendProfile(e) {
+  var raw = e.parameter.data;
+  if (!raw) return jsonResponse({ success: false, error: 'data 파라미터 없음' });
+
+  var body = JSON.parse(raw);
+  var sheet = getProfileSheet();
+  var rowCount = sheet.getLastRow();
+  var profileId = 'P-' + String(rowCount).padStart(5, '0');
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+
+  sheet.appendRow([
+    profileId,
+    now,
+    now,
+    body.channel || '',
+    body.kakaoId || '',
+    body.phone || '',
+    body.nickname || '',
+    body.occupation || '',
+    body.ageRange || '',
+    body.purpose || '',
+    body.taste || '',
+    body.notification || '',
+    body.quizResult || '',
+    body.collectionMethod || '',
+    body.sessionIds || '',
+    body.memo || ''
+  ]);
+
+  return jsonResponse({ success: true, profileId: profileId });
+}
+
+// 프로필 업데이트 (?action=updateProfile&profileId=P-00001&data=JSON)
+function updateProfile(e) {
+  var profileId = e.parameter.profileId;
+  var raw = e.parameter.data;
+  if (!profileId || !raw) return jsonResponse({ success: false, error: '파라미터 누락' });
+
+  var body = JSON.parse(raw);
+  var sheet = getProfileSheet();
+  var lastRow = sheet.getLastRow();
+
+  for (var i = 2; i <= lastRow; i++) {
+    if (String(sheet.getRange(i, 1).getValue()) === profileId) {
+      var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+      sheet.getRange(i, 3).setValue(now); // 수정일
+
+      // 비어있지 않은 필드만 업데이트
+      if (body.channel) sheet.getRange(i, 4).setValue(body.channel);
+      if (body.kakaoId) sheet.getRange(i, 5).setValue(body.kakaoId);
+      if (body.phone) sheet.getRange(i, 6).setValue(body.phone);
+      if (body.nickname) sheet.getRange(i, 7).setValue(body.nickname);
+      if (body.occupation) sheet.getRange(i, 8).setValue(body.occupation);
+      if (body.ageRange) sheet.getRange(i, 9).setValue(body.ageRange);
+      if (body.purpose) sheet.getRange(i, 10).setValue(body.purpose);
+      if (body.taste) sheet.getRange(i, 11).setValue(body.taste);
+      if (body.notification) sheet.getRange(i, 12).setValue(body.notification);
+      if (body.quizResult) sheet.getRange(i, 13).setValue(body.quizResult);
+      if (body.collectionMethod) sheet.getRange(i, 14).setValue(body.collectionMethod);
+
+      // 세션ID는 기존 값에 추가 (중복 방지)
+      if (body.sessionIds) {
+        var existing = String(sheet.getRange(i, 15).getValue() || '');
+        var existingList = existing ? existing.split(',').map(function(s) { return s.trim(); }) : [];
+        var newIds = body.sessionIds.split(',').map(function(s) { return s.trim(); });
+        for (var j = 0; j < newIds.length; j++) {
+          if (newIds[j] && existingList.indexOf(newIds[j]) === -1) {
+            existingList.push(newIds[j]);
+          }
+        }
+        sheet.getRange(i, 15).setValue(existingList.join(','));
+      }
+
+      return jsonResponse({ success: true });
+    }
+  }
+
+  return jsonResponse({ success: false, error: '프로필을 찾을 수 없음' });
+}
+
+// 전체 프로필 조회 (대시보드용, ?action=readProfiles)
+function readProfiles() {
+  var sheet = getProfileSheet();
+  var lastRow = sheet.getLastRow();
+
+  if (lastRow <= 1) return jsonResponse({ profiles: [] });
+
+  var data = sheet.getRange(2, 1, lastRow - 1, PROFILE_HEADERS.length).getValues();
+  var profiles = data.map(function(row) { return rowToProfile(row); });
+
+  return jsonResponse({ profiles: profiles });
 }
 
 function jsonResponse(data) {

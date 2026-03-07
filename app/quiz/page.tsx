@@ -166,6 +166,16 @@ export default function QuizPage() {
       setScores(next);
       setWinner(w);
       setPhase('result');
+      // 퀴즈 결과를 프로필에 저장
+      fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: '자사몰',
+          quizResult: w,
+          collectionMethod: 'quiz',
+        }),
+      }).catch(() => {});
     }
   };
 
