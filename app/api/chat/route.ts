@@ -3,14 +3,16 @@ import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { findProfile, saveProfile, updateProfile } from '@/lib/profile';
+import { notifyChat } from '@/lib/ntfy';
 
 // --- IP 기반 Rate Limiter (슬라이딩 윈도우) ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1분
 const RATE_LIMIT_MAX_REQUESTS = 20;     // 윈도우당 최대 요청 수
+const RATE_LIMIT_MAX_IPS = 10_000;      // 메모리 누수 방지: 최대 IP 추적 수
 
 const ipRequestMap = new Map<string, number[]>();
 
-// 5분마다 오래된 항목 정리 (메모리 누수 방지)
+// 2분마다 오래된 항목 정리 (메모리 누수 방지 — 공격적 클린업)
 setInterval(() => {
   const now = Date.now();
   for (const [ip, timestamps] of ipRequestMap.entries()) {
@@ -21,7 +23,7 @@ setInterval(() => {
       ipRequestMap.set(ip, valid);
     }
   }
-}, 5 * 60 * 1000);
+}, 2 * 60 * 1000);
 
 function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
@@ -41,6 +43,12 @@ function isRateLimited(ip: string): boolean {
   if (valid.length >= RATE_LIMIT_MAX_REQUESTS) {
     ipRequestMap.set(ip, valid);
     return true;
+  }
+
+  // 메모리 보호: 추적 IP 수가 한계를 넘으면 가장 오래된 항목부터 제거
+  if (!ipRequestMap.has(ip) && ipRequestMap.size >= RATE_LIMIT_MAX_IPS) {
+    const oldestKey = ipRequestMap.keys().next().value;
+    if (oldestKey) ipRequestMap.delete(oldestKey);
   }
 
   valid.push(now);
@@ -70,6 +78,14 @@ export async function POST(req: NextRequest) {
 
     if (!message?.trim()) {
       return NextResponse.json({ error: '메시지를 입력해주세요.' }, { status: 400 });
+    }
+
+    // 입력 길이 제한 (2000자): 과도한 토큰 소비 및 프롬프트 인젝션 방지
+    if (message.length > 2000) {
+      return NextResponse.json(
+        { error: '메시지가 너무 깁니다. 2000자 이내로 입력해주세요.' },
+        { status: 400 }
+      );
     }
 
     // 1. 프로필 조회
@@ -106,7 +122,12 @@ export async function POST(req: NextRequest) {
         .catch(() => false);
     }
 
-    // 5. Google Sheets 기록 (await로 완료 보장, 실패해도 응답은 정상 반환)
+    // 5. ntfy 알림 (첫 메시지일 때만 — 스팸 방지)
+    if (isFirstMessage) {
+      notifyChat({ platform, message, escalated: escalate }).catch(() => {});
+    }
+
+    // 6. Google Sheets 기록 (await로 완료 보장, 실패해도 응답은 정상 반환)
     try {
       await initSheet();
       await appendConversation({

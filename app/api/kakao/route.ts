@@ -3,6 +3,7 @@ import { getChatResponse } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { findProfile, saveProfile, updateProfile } from '@/lib/profile';
+import { notifyChat } from '@/lib/ntfy';
 
 // 카카오채널 챗봇 webhook 엔드포인트
 // 카카오 비즈니스 채널 → 스킬 서버 → 이 API
@@ -14,6 +15,11 @@ export async function POST(req: NextRequest) {
 
     if (!userMessage) {
       return NextResponse.json(makeResponse('안녕하세요! 제철삼촌입니다 🍊\n무엇이든 편하게 물어보세요!'));
+    }
+
+    // 입력 길이 제한 (2000자): 과도한 토큰 소비 및 프롬프트 인젝션 방지
+    if (userMessage.length > 2000) {
+      return NextResponse.json(makeResponse('메시지가 너무 깁니다. 2000자 이내로 입력해주세요.'));
     }
 
     // 1. 프로필 조회 (카카오ID 기반)
@@ -48,7 +54,12 @@ export async function POST(req: NextRequest) {
         .catch(e => console.error('카카오 알림 오류:', e));
     }
 
-    // 5. Google Sheets 기록 (await로 완료 보장)
+    // 5. ntfy 알림 (첫 문의 시)
+    if (!profile) {
+      notifyChat({ platform: '카카오채널', message: userMessage, escalated: escalate }).catch(() => {});
+    }
+
+    // 6. Google Sheets 기록 (await로 완료 보장)
     try {
       await initSheet();
       await appendConversation({
