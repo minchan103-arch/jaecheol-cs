@@ -8,14 +8,18 @@ interface Message {
   escalated?: boolean;
 }
 
-const KAKAO_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL ?? 'https://pf.kakao.com/_PmNqX/chat';
+const KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_xjXkxjG/chat';
+const OPENCHAT_URL = 'https://open.kakao.com/o/sLFUT4hi';
 
-export default function ChatWidget({ platform, panelMode = false }: { platform: string; panelMode?: boolean }) {
+export default function ChatWidget({ platform, panelMode = false, memberName }: { platform: string; panelMode?: boolean; memberName?: string }) {
+  const greeting = memberName
+    ? `안녕하세요 ${memberName} 🍊\n제철삼촌입니다! 무엇이든 편하게 물어보세요.`
+    : '안녕하세요 조카님 🍊\n제철삼촌입니다! 무엇이든 편하게 물어보세요.';
   const [isOpen, setIsOpen] = useState(panelMode);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: '안녕하세요 조카님 🍊\n제철삼촌입니다! 무엇이든 편하게 물어보세요.',
+      content: greeting,
     },
   ]);
   const [input, setInput] = useState('');
@@ -98,15 +102,15 @@ export default function ChatWidget({ platform, panelMode = false }: { platform: 
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* 상담사 연결 버튼 — 항상 표시 */}
+              {/* 1:1 상담 연결 버튼 — 항상 표시 */}
               <a
-                href={KAKAO_URL}
+                href={OPENCHAT_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold no-underline"
                 style={{ background: '#FEE500', color: '#191919' }}
               >
-                💬 상담사 연결
+                💬 1:1 상담
               </a>
               <button
                 onClick={handleClose}
@@ -136,15 +140,23 @@ export default function ChatWidget({ platform, panelMode = false }: { platform: 
                 >
                   {msg.content}
                   {msg.escalated && (
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-col gap-2">
                       <a
-                        href={KAKAO_URL}
+                        href={OPENCHAT_URL}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl text-sm font-bold no-underline"
                         style={{ background: '#FEE500', color: '#191919' }}
                       >
-                        💬 카카오 채널로 상담하기
+                        💬 1:1 상담 연결
+                      </a>
+                      <a
+                        href={KAKAO_CHANNEL_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl text-xs font-medium no-underline border border-gray-200 text-gray-600 bg-white"
+                      >
+                        📢 카카오채널 문의
                       </a>
                     </div>
                   )}
