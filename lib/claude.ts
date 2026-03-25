@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CS_SYSTEM_PROMPT } from './cs-prompt';
 import { getWeeklyBox, getStockStatus } from './weekly-box';
 import { buildProfilePrompt } from './profile-prompt';
+import { getCustomerContext, formatContextForPrompt } from './hub-api';
 import type { ProfileRow } from './profile';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -17,10 +18,37 @@ export interface ChatResult {
   escalateReason: string;
 }
 
-const FRUIT_KEYWORDS = ['과일', '제철', '뭐 들어', '입고', '이번 주', '이번주', '박스', '뭐 있', '어떤 과일', '레드향', '한라봉', '천혜향', '딸기', '사과', '귤', '감귤', '예약', '주문'];
+const FRUIT_KEYWORDS = ['과일', '제철', '뭐 들어', '입고', '이번 주', '이번주', '박스', '뭐 있', '어떤 과일', '레드향', '한라봉', '천혜향', '딸기', '사과', '귤', '감귤', '예약', '주문', '참외', '수박', '복숭아', '포도', '감', '배', '토마토'];
+
+const ORDER_KEYWORDS = ['주문', '배송', '송장', '택배', '언제 와', '언제 오', '도착', '출발', '발송', '어디까지', '추적', '운송장', '내 주문', '주문 확인', '배송 조회', '몇 시', '받을 수', '안 왔', '안왔'];
 
 function matchesFruitQuery(message: string): boolean {
   return FRUIT_KEYWORDS.some(kw => message.includes(kw));
+}
+
+function matchesOrderQuery(message: string): boolean {
+  return ORDER_KEYWORDS.some(kw => message.includes(kw));
+}
+
+/** 메시지에서 전화번호 패턴 추출 */
+function extractPhone(message: string, history: ChatMessage[]): string | null {
+  const allText = [...history.map(h => h.content), message].join(' ');
+  // 010-1234-5678 또는 01012345678 패턴
+  const match = allText.match(/01[0-9][-\s]?\d{3,4}[-\s]?\d{4}/);
+  return match ? match[0].replace(/[-\s]/g, '') : null;
+}
+
+/** 메시지에서 이름 추출 (간단 패턴) */
+function extractName(message: string): string | null {
+  const patterns = [
+    /(?:이름|성함)(?:은|이|는)?\s*([가-힣]{2,4})/,
+    /([가-힣]{2,4})(?:입니다|이요|이에요|인데요)/,
+  ];
+  for (const p of patterns) {
+    const m = message.match(p);
+    if (m) return m[1];
+  }
+  return null;
 }
 
 async function buildWeeklyBoxContext(): Promise<string> {
@@ -46,6 +74,26 @@ ${lines.join('\n')}
   }
 }
 
+async function buildOrderContext(message: string, history: ChatMessage[], profile: ProfileRow | null): Promise<string> {
+  // 프로필에서 전화번호 가져오기
+  const phone = profile?.phone || extractPhone(message, history);
+  const name = extractName(message) || profile?.nickname || null;
+
+  if (!phone && !name) {
+    return '\n\n[주문 조회 요청 감지 — 고객 식별 불가]\n고객의 전화번호를 물어봐서 주문을 조회해줘. "조카님, 주문 확인해드릴게요! 주문하실 때 입력하신 전화번호 알려주시겠어요? 😊"';
+  }
+
+  try {
+    const ctx = await getCustomerContext(phone || undefined, name || undefined);
+    if (!ctx || !ctx.found) {
+      return '\n\n[주문 조회 결과 — 데이터 없음]\n해당 전화번호/이름으로 주문 내역을 찾을 수 없음. 전화번호를 다시 확인해달라고 안내하거나, 카카오톡 상담 안내.';
+    }
+    return formatContextForPrompt(ctx);
+  } catch {
+    return '';
+  }
+}
+
 export interface ProfileContext {
   profile: ProfileRow | null;
   isFirstMessage: boolean;
@@ -62,9 +110,20 @@ export async function getChatResponse(
 ): Promise<ChatResultWithProfile> {
   let systemPrompt = CS_SYSTEM_PROMPT;
 
+  // 과일/상품 관련 → 주간박스 컨텍스트
   if (matchesFruitQuery(message)) {
     const weeklyContext = await buildWeeklyBoxContext();
     systemPrompt += weeklyContext;
+  }
+
+  // 주문/배송 관련 → 주문 데이터 컨텍스트
+  if (matchesOrderQuery(message)) {
+    const orderContext = await buildOrderContext(
+      message,
+      history,
+      profileContext?.profile || null
+    );
+    systemPrompt += orderContext;
   }
 
   // 프로필 컨텍스트 주입
@@ -72,8 +131,14 @@ export async function getChatResponse(
     systemPrompt += buildProfilePrompt(profileContext.profile, profileContext.isFirstMessage);
   }
 
+  // 최근 15개 메시지만 전송: 토큰 비용 절감 + Claude 컨텍스트 윈도우 보호.
+  const MAX_HISTORY = 15;
+  const trimmedHistory = history.length > MAX_HISTORY
+    ? history.slice(-MAX_HISTORY)
+    : history;
+
   const messages = [
-    ...history.map(h => ({ role: h.role, content: h.content })),
+    ...trimmedHistory.map(h => ({ role: h.role, content: h.content })),
     { role: 'user' as const, content: message },
   ];
 
