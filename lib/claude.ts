@@ -112,9 +112,17 @@ export async function getChatResponse(
   message: string,
   history: ChatMessage[] = [],
   profileContext?: ProfileContext,
-  options?: { maxTokens?: number; skipContext?: boolean }
+  options?: { maxTokens?: number; skipContext?: boolean; platform?: string }
 ): Promise<ChatResultWithProfile> {
   let systemPrompt = CS_SYSTEM_PROMPT;
+
+  // 플랫폼별 에스컬레이션 안내 분기
+  if (options?.platform === '카카오채널') {
+    systemPrompt += `\n\n[현재 플랫폼: 카카오 채널]
+고객이 이미 카카오 채널에서 대화 중이므로, 카카오 링크(https://pf.kakao.com/...)를 절대 보내지 마.
+에스컬레이션 시: "조카님, 삼촌이 직접 확인해서 답변드릴게요! 😊 잠시만 기다려주시면 삼촌이 직접 연락드리겠습니다 🙏"
+카카오 링크 안내 금지. "기다려달라"는 말만 해.`;
+  }
 
   if (!options?.skipContext) {
     // 과일/상품 관련 → 주간박스 컨텍스트
