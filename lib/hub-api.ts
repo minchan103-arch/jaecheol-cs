@@ -99,3 +99,45 @@ export function formatContextForPrompt(ctx: CustomerContext): string {
 
   return lines.join('\n');
 }
+
+
+/**
+ * 에스컬레이션된 대화를 Hub에 전송
+ */
+export async function sendEscalation(data: {
+  platform: string;
+  customer_id: string;
+  customer_name: string;
+  message: string;
+  bot_reply: string;
+  escalate_reason: string;
+}): Promise<void> {
+  try {
+    await fetch(`${HUB_URL}/api/chatbot/escalate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    console.error('[hub-api] escalate 전송 실패');
+  }
+}
+
+
+/**
+ * 고객에게 전달 대기 중인 관리자 답변 확인
+ */
+export async function getPendingReply(customerId: string): Promise<string | null> {
+  try {
+    const resp = await fetch(
+      `${HUB_URL}/api/chatbot/pending-reply?customer_id=${encodeURIComponent(customerId)}`,
+      { signal: AbortSignal.timeout(2000) },
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.has_reply ? data.reply : null;
+  } catch {
+    return null;
+  }
+}

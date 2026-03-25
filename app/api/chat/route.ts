@@ -4,6 +4,7 @@ import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { findProfile, saveProfile, updateProfile } from '@/lib/profile';
 import { notifyChat } from '@/lib/ntfy';
+import { sendEscalation, getPendingReply } from '@/lib/hub-api';
 
 // --- IP 기반 Rate Limiter (슬라이딩 윈도우) ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1분
@@ -92,10 +93,18 @@ export async function POST(req: NextRequest) {
     const profile = await findProfile({ sessionId }).catch(() => null);
     const isFirstMessage = history.length === 0;
 
-    // 2. Claude로 답변 생성 (프로필 컨텍스트 포함)
+    // 2. 대기 중인 관리자 답변 확인
+    const pendingReply = await getPendingReply(sessionId);
+
+    // 3. Claude로 답변 생성 (프로필 컨텍스트 포함)
     const { reply, escalate, extractedProfile } = await getChatResponse(
       message, history, { profile, isFirstMessage }
     );
+
+    // 관리자 답변이 있으면 앞에 추가
+    const finalReply = pendingReply
+      ? `💬 삼촌이 직접 답변드려요!\n\n${pendingReply}\n\n---\n\n${reply}`
+      : reply;
 
     // 3. 추출된 프로필 데이터 저장
     if (extractedProfile && Object.keys(extractedProfile).length > 0) {
@@ -115,11 +124,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. escalate 시 카카오톡 나에게 보내기 알림
+    // 4. escalate 시 카카오톡 나에게 보내기 알림 + Hub 인박스 전송
     let kakaoSent = false;
     if (escalate) {
-      kakaoSent = await sendKakaoEscalationAlert({ platform, sessionId, message })
-        .catch(() => false);
+      const [sent] = await Promise.all([
+        sendKakaoEscalationAlert({ platform, sessionId, message }).catch(() => false),
+        sendEscalation({
+          platform,
+          customer_id: sessionId,
+          customer_name: profile?.nickname || '',
+          message,
+          bot_reply: reply,
+          escalate_reason: '에스컬레이션',
+        }).catch(e => console.error('Hub 에스컬레이션 오류:', e)),
+      ]);
+      kakaoSent = sent as boolean;
     }
 
     // 5. ntfy 알림 (첫 메시지일 때만 — 스팸 방지)
@@ -134,7 +153,7 @@ export async function POST(req: NextRequest) {
         platform,
         sessionId,
         message,
-        reply,
+        reply: finalReply,
         status: escalate ? '카카오전달' : '자동처리완료',
         kakaoSent,
       });
@@ -142,7 +161,7 @@ export async function POST(req: NextRequest) {
       console.error('Sheets 기록 오류:', e);
     }
 
-    return NextResponse.json({ reply, escalated: escalate, sessionId });
+    return NextResponse.json({ reply: finalReply, escalated: escalate, sessionId });
 
   } catch (error) {
     console.error('채팅 API 오류:', error);
