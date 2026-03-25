@@ -27,7 +27,12 @@ function matchesFruitQuery(message: string): boolean {
 }
 
 function matchesOrderQuery(message: string): boolean {
-  return ORDER_KEYWORDS.some(kw => message.includes(kw));
+  // 주문 키워드 매칭 OR 전화번호만 보낸 경우 (주문 조회 의도)
+  if (ORDER_KEYWORDS.some(kw => message.includes(kw))) return true;
+  // 전화번호만 보낸 메시지 → 주문 조회 의도로 간주
+  const trimmed = message.replace(/[-\s]/g, '');
+  if (/^01[0-9]\d{7,8}$/.test(trimmed)) return true;
+  return false;
 }
 
 /** 메시지에서 전화번호 패턴 추출 */
