@@ -106,7 +106,8 @@ export interface ChatResultWithProfile extends ChatResult {
 export async function getChatResponse(
   message: string,
   history: ChatMessage[] = [],
-  profileContext?: ProfileContext
+  profileContext?: ProfileContext,
+  options?: { maxTokens?: number }
 ): Promise<ChatResultWithProfile> {
   let systemPrompt = CS_SYSTEM_PROMPT;
 
@@ -144,7 +145,7 @@ export async function getChatResponse(
 
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
+    max_tokens: options?.maxTokens || 1024,
     system: systemPrompt,
     messages,
   });
