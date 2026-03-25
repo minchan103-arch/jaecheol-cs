@@ -42,12 +42,15 @@ export async function POST(req: NextRequest) {
             sendKakaoEscalationAlert({ platform: '카카오채널', sessionId: kakaoId, message: userMessage }).catch(() => {}),
             sendEscalation({
               platform: '카카오채널', customer_id: kakaoId,
-              customer_name: '', message: userMessage,
+              customer_name: `카카오 ${kakaoId.slice(0, 8)}`, message: userMessage,
               bot_reply: reply, escalate_reason: '에스컬레이션',
             }).catch(() => {}),
           ]).catch(() => {});
         }
-        notifyChat({ platform: '카카오채널', message: userMessage, escalated: escalate }).catch(() => {});
+        // ntfy 알림은 에스컬레이션 시에만 (자동처리는 알림 불필요)
+        if (escalate) {
+          notifyChat({ platform: '카카오채널', message: userMessage, escalated: true }).catch(() => {});
+        }
         await initSheet();
         await appendConversation({
           platform: '카카오채널', sessionId: kakaoId,

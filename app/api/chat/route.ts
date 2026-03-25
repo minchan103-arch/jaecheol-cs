@@ -141,9 +141,9 @@ export async function POST(req: NextRequest) {
       kakaoSent = sent as boolean;
     }
 
-    // 5. ntfy 알림 (첫 메시지일 때만 — 스팸 방지)
-    if (isFirstMessage) {
-      notifyChat({ platform, message, escalated: escalate }).catch(() => {});
+    // 5. ntfy 알림 — 에스컬레이션 시에만 (자동처리는 알림 불필요)
+    if (escalate) {
+      notifyChat({ platform, message, escalated: true }).catch(() => {});
     }
 
     // 6. Google Sheets 기록 (await로 완료 보장, 실패해도 응답은 정상 반환)
