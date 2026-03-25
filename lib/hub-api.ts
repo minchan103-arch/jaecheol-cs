@@ -48,7 +48,7 @@ export async function getCustomerContext(phone?: string, name?: string): Promise
 
   try {
     const resp = await fetch(`${HUB_URL}/api/chatbot/customer-context?${params}`, {
-      signal: AbortSignal.timeout(1500), // 1.5초 타임아웃 (카카오 5초 제한 대응)
+      signal: AbortSignal.timeout(3000), // 3초 타임아웃
     });
     if (!resp.ok) return null;
     return await resp.json();
