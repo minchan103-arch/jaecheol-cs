@@ -4,7 +4,7 @@ import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { findProfile, saveProfile, updateProfile } from '@/lib/profile';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply } from '@/lib/hub-api';
+import { sendEscalation, getPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
 
 // --- IP 기반 Rate Limiter (슬라이딩 윈도우) ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1분
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     const pendingReply = await getPendingReply(sessionId);
 
     // 3. Claude로 답변 생성 (프로필 컨텍스트 포함)
-    const { reply, escalate, extractedProfile } = await getChatResponse(
+    const { reply, escalate, extractedProfile, usedPatternIds } = await getChatResponse(
       message, history, { profile, isFirstMessage }
     );
 
@@ -159,6 +159,22 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.error('Sheets 기록 오류:', e);
+    }
+
+    // 7. Hub 학습 로그 전송 + 패턴 피드백 (fire-and-forget)
+    logConversation({
+      platform,
+      customer_id: sessionId,
+      user_message: message,
+      bot_reply: reply,
+      was_escalated: escalate,
+      escalate_reason: escalate ? '에스컬레이션' : '',
+    }).catch(() => {});
+
+    if (usedPatternIds && usedPatternIds.length > 0) {
+      for (const pid of usedPatternIds) {
+        sendPatternFeedback(pid, !escalate).catch(() => {});
+      }
     }
 
     return NextResponse.json({ reply: finalReply, escalated: escalate, sessionId });

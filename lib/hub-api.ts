@@ -126,6 +126,76 @@ export async function sendEscalation(data: {
 
 
 /**
+ * 대화 로그 전송 (fire-and-forget, 모든 대화 기록)
+ */
+export async function logConversation(data: {
+  platform: string;
+  customer_id: string;
+  user_message: string;
+  bot_reply: string;
+  was_escalated: boolean;
+  escalate_reason?: string;
+}): Promise<void> {
+  try {
+    await fetch(`${HUB_URL}/api/chatbot/log-conversation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    console.error('[hub-api] log-conversation 전송 실패');
+  }
+}
+
+
+/**
+ * 학습된 패턴 조회 (프롬프트 주입용)
+ */
+export interface LearnedPattern {
+  id: number;
+  question: string;
+  answer: string;
+  confidence: number;
+}
+
+export interface LearnedContext {
+  patterns: LearnedPattern[];
+  phase: number;
+  stats: Record<string, unknown>;
+}
+
+export async function getLearnedContext(message: string): Promise<LearnedContext | null> {
+  try {
+    const resp = await fetch(
+      `${HUB_URL}/api/chatbot/learned-context?message=${encodeURIComponent(message)}`,
+      { signal: AbortSignal.timeout(1000) }, // 1초 타임아웃 — 응답 속도 보호
+    );
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    console.error('[hub-api] learned-context 조회 실패');
+    return null;
+  }
+}
+
+
+/**
+ * 패턴 사용 결과 피드백 (에스컬레이션 안 됐으면 success)
+ */
+export async function sendPatternFeedback(patternId: number, success: boolean): Promise<void> {
+  try {
+    await fetch(
+      `${HUB_URL}/api/chatbot/learned-context/feedback?pattern_id=${patternId}&success=${success}`,
+      { method: 'POST', signal: AbortSignal.timeout(2000) },
+    );
+  } catch {
+    // fire-and-forget
+  }
+}
+
+
+/**
  * 고객에게 전달 대기 중인 관리자 답변 확인
  */
 export async function getPendingReply(customerId: string): Promise<string | null> {

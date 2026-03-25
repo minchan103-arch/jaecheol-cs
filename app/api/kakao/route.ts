@@ -3,7 +3,7 @@ import { getChatResponse } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply } from '@/lib/hub-api';
+import { sendEscalation, getPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
 
 // 카카오채널 챗봇 webhook 엔드포인트
 // 카카오 스킬 서버 5초 제한 → 극한 최적화
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(makeResponse(`💬 삼촌이 직접 답변드려요!\n\n${pendingReply}`));
     }
 
-    const { reply, escalate } = chatResult;
+    const { reply, escalate, usedPatternIds } = chatResult;
 
     // 3. 후처리 fire-and-forget
     (async () => {
@@ -57,6 +57,17 @@ export async function POST(req: NextRequest) {
           message: userMessage, reply,
           status: escalate ? '카카오전달' : '자동처리완료', kakaoSent: escalate,
         });
+        // Hub 학습 로그 + 패턴 피드백
+        logConversation({
+          platform: '카카오채널', customer_id: kakaoId,
+          user_message: userMessage, bot_reply: reply,
+          was_escalated: escalate, escalate_reason: escalate ? '에스컬레이션' : '',
+        }).catch(() => {});
+        if (usedPatternIds && usedPatternIds.length > 0) {
+          for (const pid of usedPatternIds) {
+            sendPatternFeedback(pid, !escalate).catch(() => {});
+          }
+        }
       } catch (e) { console.error('후처리 오류:', e); }
     })();
 

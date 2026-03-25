@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CS_SYSTEM_PROMPT } from './cs-prompt';
 import { getWeeklyBox, getStockStatus } from './weekly-box';
 import { buildProfilePrompt } from './profile-prompt';
-import { getCustomerContext, formatContextForPrompt } from './hub-api';
+import { getCustomerContext, formatContextForPrompt, getLearnedContext, sendPatternFeedback } from './hub-api';
 import type { ProfileRow } from './profile';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -106,6 +106,7 @@ export interface ProfileContext {
 
 export interface ChatResultWithProfile extends ChatResult {
   extractedProfile?: Record<string, string>;
+  usedPatternIds?: number[];
 }
 
 export async function getChatResponse(
@@ -147,6 +148,23 @@ export async function getChatResponse(
     systemPrompt += buildProfilePrompt(profileContext.profile, profileContext.isFirstMessage);
   }
 
+  // 학습 패턴 주입 (Phase 2+, 1초 타임아웃, 실패 시 무시)
+  let usedPatternIds: number[] = [];
+  if (!options?.skipContext) {
+    try {
+      const learned = await getLearnedContext(message);
+      if (learned && learned.patterns.length > 0) {
+        const patternLines = learned.patterns.map(
+          p => `- Q: "${p.question}" → A: "${p.answer}" (신뢰도: ${p.confidence})`
+        );
+        systemPrompt += `\n\n[학습된 CS 패턴 — 참고하되, 상황에 맞게 자연스럽게 변형해서 답변]\n${patternLines.join('\n')}`;
+        usedPatternIds = learned.patterns.map(p => p.id);
+      }
+    } catch {
+      // 학습 패턴 조회 실패 — 정적 프롬프트로 정상 동작
+    }
+  }
+
   // 최근 15개 메시지만 전송: 토큰 비용 절감 + Claude 컨텍스트 윈도우 보호.
   const MAX_HISTORY = 15;
   const trimmedHistory = history.length > MAX_HISTORY
@@ -181,8 +199,8 @@ export async function getChatResponse(
   // cs-prompt.ts 형식에 맞춰 ESCALATE: 접두사로 에스컬레이션 판단
   if (text.startsWith('ESCALATE:')) {
     const reply = text.slice('ESCALATE:'.length).trim();
-    return { reply, escalate: true, escalateReason: '에스컬레이션 필요', extractedProfile };
+    return { reply, escalate: true, escalateReason: '에스컬레이션 필요', extractedProfile, usedPatternIds };
   }
 
-  return { reply: text, escalate: false, escalateReason: '', extractedProfile };
+  return { reply: text, escalate: false, escalateReason: '', extractedProfile, usedPatternIds };
 }
