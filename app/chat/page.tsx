@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-const KAKAO_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL || 'https://pf.kakao.com/_replace';
+const KAKAO_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL || 'https://pf.kakao.com/_xkFiZX/chat';
 
 interface Message {
   role: 'user' | 'assistant';

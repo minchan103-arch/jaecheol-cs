@@ -8,7 +8,7 @@ interface Message {
   escalated?: boolean;
 }
 
-const KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_xjXkxjG/chat';
+const KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_xkFiZX/chat';
 const OPENCHAT_URL = 'https://open.kakao.com/o/sLFUT4hi';
 
 export default function ChatWidget({ platform, panelMode = false, memberName }: { platform: string; panelMode?: boolean; memberName?: string }) {

@@ -34,7 +34,7 @@ const STATUS_COLOR: Record<string, string> = {
   처리완료: 'bg-gray-100 text-gray-600',
 };
 
-const KAKAO_CHANNEL_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL || 'https://pf.kakao.com/_replace';
+const KAKAO_CHANNEL_URL = process.env.NEXT_PUBLIC_KAKAO_CHANNEL_URL || 'https://pf.kakao.com/_xkFiZX/chat';
 
 export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
