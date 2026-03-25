@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // 1. 대기 답변 확인 + Claude 호출 동시 시작 (프로필 조회 생략 → 1~2초 절약)
     const [pendingReply, chatResult] = await Promise.all([
       getPendingReply(kakaoId).catch(() => null),
-      getChatResponse(userMessage, [], undefined, { maxTokens: 512, skipContext: true }),
+      getChatResponse(userMessage, [], undefined, { maxTokens: 512 }),
     ]);
 
     // 2. 관리자 답변이 있으면 우선 전달
