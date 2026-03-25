@@ -107,24 +107,26 @@ export async function getChatResponse(
   message: string,
   history: ChatMessage[] = [],
   profileContext?: ProfileContext,
-  options?: { maxTokens?: number }
+  options?: { maxTokens?: number; skipContext?: boolean }
 ): Promise<ChatResultWithProfile> {
   let systemPrompt = CS_SYSTEM_PROMPT;
 
-  // 과일/상품 관련 → 주간박스 컨텍스트
-  if (matchesFruitQuery(message)) {
-    const weeklyContext = await buildWeeklyBoxContext();
-    systemPrompt += weeklyContext;
-  }
+  if (!options?.skipContext) {
+    // 과일/상품 관련 → 주간박스 컨텍스트
+    if (matchesFruitQuery(message)) {
+      const weeklyContext = await buildWeeklyBoxContext();
+      systemPrompt += weeklyContext;
+    }
 
-  // 주문/배송 관련 → 주문 데이터 컨텍스트
-  if (matchesOrderQuery(message)) {
-    const orderContext = await buildOrderContext(
-      message,
-      history,
-      profileContext?.profile || null
-    );
-    systemPrompt += orderContext;
+    // 주문/배송 관련 → 주문 데이터 컨텍스트
+    if (matchesOrderQuery(message)) {
+      const orderContext = await buildOrderContext(
+        message,
+        history,
+        profileContext?.profile || null
+      );
+      systemPrompt += orderContext;
+    }
   }
 
   // 프로필 컨텍스트 주입
