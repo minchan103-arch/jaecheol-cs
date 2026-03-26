@@ -23,8 +23,11 @@ export interface CustomerContext {
     amount: number;
     status: string;
     ordered_at: string;
+    buyer_name: string;
+    buyer_phone: string;
     receiver_name: string;
     receiver_phone: string;
+    match_type: 'buyer' | 'receiver' | 'both' | 'unknown';
   }>;
   shipments: Array<{
     order_id: string;
@@ -67,12 +70,34 @@ export function formatContextForPrompt(ctx: CustomerContext): string {
   const lines: string[] = ['\n\n[실시간 고객 데이터 — 아래 정보로 정확하게 답변할 것]'];
 
   if (ctx.customer) {
-    lines.push(`고객: ${ctx.customer.name} | 총 ${ctx.customer.order_count}회 주문 | 누적 ${ctx.customer.total_spent.toLocaleString()}원`);
+    lines.push(`고객: ${ctx.customer.name} | 누적 ${ctx.customer.total_spent.toLocaleString()}원`);
   }
 
-  if (ctx.orders.length > 0) {
-    lines.push('\n최근 주문:');
-    for (const o of ctx.orders) {
+  // 주문을 본인배송 vs 선물(대리주문)으로 분리
+  const selfOrders = ctx.orders.filter(o => o.match_type === 'receiver' || o.match_type === 'both');
+  const giftOrders = ctx.orders.filter(o => o.match_type === 'buyer');
+
+  if (selfOrders.length > 0) {
+    lines.push(`\n★ 본인 수령 주문 (${selfOrders.length}건):`);
+    for (const o of selfOrders) {
+      const date = o.ordered_at ? o.ordered_at.slice(0, 10) : '날짜미상';
+      lines.push(`- ${date} | ${o.product_name} | ${o.amount.toLocaleString()}원 | 상태: ${o.status} | 수취인: ${o.receiver_name}`);
+    }
+  }
+
+  if (giftOrders.length > 0) {
+    lines.push(`\n☆ 선물/대리 주문 (${giftOrders.length}건) — 이 고객이 구매했지만 다른 사람이 받는 주문:`);
+    for (const o of giftOrders) {
+      const date = o.ordered_at ? o.ordered_at.slice(0, 10) : '날짜미상';
+      lines.push(`- ${date} | ${o.product_name} | ${o.amount.toLocaleString()}원 | 상태: ${o.status} | 수취인: ${o.receiver_name}`);
+    }
+  }
+
+  // match_type이 unknown인 경우 (이름 검색)
+  const unknownOrders = ctx.orders.filter(o => o.match_type === 'unknown');
+  if (unknownOrders.length > 0) {
+    lines.push(`\n최근 주문 (${unknownOrders.length}건):`);
+    for (const o of unknownOrders) {
       const date = o.ordered_at ? o.ordered_at.slice(0, 10) : '날짜미상';
       lines.push(`- ${date} | ${o.product_name} | ${o.amount.toLocaleString()}원 | 상태: ${o.status} | 수취인: ${o.receiver_name}`);
     }
@@ -95,7 +120,12 @@ export function formatContextForPrompt(ctx: CustomerContext): string {
     }
   }
 
-  lines.push('\n위 데이터를 활용해서 고객 질문에 정확하게 답변해. 데이터에 없는 내용은 추측하지 말고 카카오 안내해.');
+  lines.push('\n[응답 규칙]');
+  lines.push('- 고객이 "내 주문", "배송 언제" 등 본인 배송을 물으면 → ★본인 수령 주문 기준으로 답변');
+  lines.push('- 고객이 선물/다른 사람 배송을 물으면 → ☆선물 주문 기준으로 답변');
+  lines.push('- 대화 맥락을 보고 어떤 주문에 대한 질문인지 판단해서 답변해');
+  lines.push('- 건수를 말할 때: 본인 수령과 선물 주문을 합산하지 말고 구분해서 안내해');
+  lines.push('- 데이터에 없는 내용은 추측하지 말고 삼촌이 직접 확인해준다고 안내해');
 
   return lines.join('\n');
 }
