@@ -75,10 +75,13 @@ export default function ChatWidget({ platform, panelMode = false, memberName }: 
         body: JSON.stringify({ message: text, platform, sessionId, history }),
       });
       const data = await res.json();
-      // 상담원 모드: AI 응답 없음, 폴링으로 관리자 답변 수신
+      // 상담원 모드
       if (data.agentMode) {
         setAgentMode(true);
-        // 상담원 모드에서는 봇 메시지 표시 안 함
+        // 관리자 답변이 함께 왔으면 표시
+        if (data.reply) {
+          setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        }
       } else if (data.escalated) {
         // 최초 에스컬레이션: 안내 메시지 + 상담원 모드 진입
         setAgentMode(true);

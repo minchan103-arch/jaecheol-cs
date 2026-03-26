@@ -97,18 +97,26 @@ export async function POST(req: NextRequest) {
     const adminSession = await checkAdminSession(sessionId, message).catch(() => null);
 
     if (adminSession?.active) {
-      // 고객 메시지만 Hub에 동기화, AI 응답 없음
+      // 고객 메시지 Hub에 동기화
       syncMessage({ customer_id: sessionId, message, bot_reply: '' }).catch(() => {});
+
+      // 관리자 답변이 있으면 함께 전달 (checkAdminSession이 이미 소비하므로 여기서 전달해야 함)
+      const adminReply = adminSession.has_reply && adminSession.reply ? adminSession.reply : null;
+
       try {
         await initSheet();
         await appendConversation({
           platform, sessionId, message,
-          reply: '[상담원 모드 - 봇 침묵]',
-          status: '상담원대기', kakaoSent: false,
+          reply: adminReply ? `[관리자 답변] ${adminReply}` : '[상담원 모드 - 봇 침묵]',
+          status: adminReply ? '처리완료' : '상담원대기', kakaoSent: false,
         });
       } catch {}
-      // 관리자 답변은 /api/chat/pending 폴링으로 전달
-      return NextResponse.json({ reply: null, escalated: true, agentMode: true, sessionId });
+      return NextResponse.json({
+        reply: adminReply ? `💬 ${adminReply}` : null,
+        escalated: true,
+        agentMode: true,
+        sessionId,
+      });
     }
 
     // 3. Claude로 답변 생성 (프로필 컨텍스트 포함)
