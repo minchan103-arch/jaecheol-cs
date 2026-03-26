@@ -304,17 +304,15 @@ export async function checkAdminSession(
   customerId: string,
   message: string,
 ): Promise<AdminSessionResult> {
-  try {
-    const params = new URLSearchParams({ customer_id: customerId, message });
-    const resp = await fetch(`${HUB_URL}/api/chatbot/admin-session?${params}`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(2000),
-    });
-    if (!resp.ok) return { active: false };
-    return await resp.json();
-  } catch {
-    return { active: false };
-  }
+  // 에러/타임아웃 시 throw → route.ts의 .catch(() => null)이 잡아서 null로 처리
+  // null = "Hub 상태 불명" vs {active:false} = "Hub가 명시적으로 상담원 모드 아니라고 응답"
+  const params = new URLSearchParams({ customer_id: customerId, message });
+  const resp = await fetch(`${HUB_URL}/api/chatbot/admin-session?${params}`, {
+    method: 'POST',
+    signal: AbortSignal.timeout(3000),
+  });
+  if (!resp.ok) throw new Error(`admin-session ${resp.status}`);
+  return await resp.json();
 }
 
 /**
