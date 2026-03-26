@@ -3,7 +3,12 @@ import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply, ackPendingReply, logConversation, sendPatternFeedback, syncMessage, checkAdminSession } from '@/lib/hub-api';
+import { sendEscalation, logConversation, sendPatternFeedback, syncMessage, checkAdminSession } from '@/lib/hub-api';
+
+// ── 상담원 모드 로컬 잠금 ──
+// 에스컬레이션 발생 시 등록, 관리자가 Hub에서 대화 종료할 때만 해제
+// Hub API 실패해도 이 Map이 있으면 봇은 절대 AI 답변 안 함
+const escalatedUsers = new Map<string, { ts: number; convId?: number }>();
 
 // ── 카카오 대화 히스토리 (in-memory, best-effort) ──
 const historyMap = new Map<string, { messages: ChatMessage[]; lastTs: number }>();
@@ -38,16 +43,19 @@ function pushHistory(kakaoId: string, userMsg: string, botReply: string) {
   }
 }
 
-// 상담원 모드 대기 응답 (자연스럽게 랜덤)
-const WAITING_RESPONSES = [
-  '네, 확인하고 있습니다! 잠시만요 😊',
-  '네, 삼촌이 확인 중이에요! 조금만 기다려주세요 🙏',
-  '접수했습니다! 확인 후 바로 답변드릴게요 😊',
-  '네, 잠시만요! 삼촌이 확인하고 있어요 🍊',
-];
-
-function getWaitingResponse(): string {
-  return WAITING_RESPONSES[Math.floor(Math.random() * WAITING_RESPONSES.length)];
+/** 상담원 모드일 때 고객 메시지를 Hub에 동기화 + 로그 기록 */
+function logAgentModeMessage(kakaoId: string, userMessage: string, logReply: string, status: '처리완료' | '상담원대기' | '자동처리완료' | '카카오전달') {
+  after(async () => {
+    try {
+      syncMessage({ customer_id: kakaoId, message: userMessage, bot_reply: '' }).catch(() => {});
+      await initSheet();
+      await appendConversation({
+        platform: '카카오채널', sessionId: kakaoId,
+        message: userMessage, reply: logReply,
+        status, kakaoSent: false,
+      });
+    } catch {}
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -64,53 +72,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(makeResponse('메시지가 너무 깁니다. 2000자 이내로 입력해주세요.'));
     }
 
-    const history = getHistory(kakaoId);
+    // ── 1. 상담원 모드 확인 ──
+    // 로컬 잠금 OR Hub 상태 확인 → 둘 중 하나라도 상담원 모드면 AI 절대 안 부름
+    const isLocalEscalated = escalatedUsers.has(kakaoId);
+    const adminSession = await checkAdminSession(kakaoId, userMessage).catch(() => null);
 
-    // ── 1. 상담원 모드 확인 (에스컬레이션된 고객) ──
-    const adminSession = await checkAdminSession(kakaoId, userMessage).catch(() => ({ active: false as const }));
+    // Hub에서 명시적으로 active=false (관리자가 종료) → 로컬 잠금 해제
+    if (isLocalEscalated && adminSession !== null && !adminSession.active) {
+      escalatedUsers.delete(kakaoId);
+      // 봇 모드로 복귀 → 아래 Claude 호출로 진행
+    }
+    // 상담원 모드 진입 조건: 로컬 잠금 있거나, Hub에서 active
+    else if (isLocalEscalated || adminSession?.active) {
+      // Hub에 상담원 모드인데 로컬 잠금 없으면 복원 (서버 재시작 대비)
+      if (!isLocalEscalated && adminSession?.active) {
+        escalatedUsers.set(kakaoId, { ts: Date.now(), convId: adminSession.conv_id });
+      }
 
-    if (adminSession.active) {
       // 관리자 답변이 있으면 전달
-      if (adminSession.has_reply && adminSession.reply) {
+      if (adminSession?.has_reply && adminSession.reply) {
         const adminReply = adminSession.reply;
-        pushHistory(kakaoId, userMessage, adminReply);
-        after(async () => {
-          try {
-            await initSheet();
-            await appendConversation({
-              platform: '카카오채널', sessionId: kakaoId,
-              message: userMessage, reply: `[관리자 답변] ${adminReply}`,
-              status: '처리완료', kakaoSent: false,
-            });
-          } catch {}
-        });
+        logAgentModeMessage(kakaoId, userMessage, `[관리자 답변] ${adminReply}`, '처리완료');
         return NextResponse.json(makeResponse(`💬 ${adminReply}`));
       }
 
-      // 관리자 답변 없음 → 자연스러운 대기 응답
-      const waitReply = getWaitingResponse();
-      pushHistory(kakaoId, userMessage, waitReply);
-      after(async () => {
-        try {
-          await initSheet();
-          await appendConversation({
-            platform: '카카오채널', sessionId: kakaoId,
-            message: userMessage, reply: '[상담원 모드 - 대기]',
-            status: '상담원대기', kakaoSent: false,
-          });
-        } catch {}
-      });
-      return NextResponse.json(makeResponse(waitReply));
+      // 관리자 답변 없음 → 봇은 침묵, 고객 메시지만 Hub에 동기화
+      logAgentModeMessage(kakaoId, userMessage, '[상담원 모드 - 봇 침묵]', '상담원대기');
+      // 카카오 웹훅은 응답 필수 → 최소한의 안내만 (AI 답변 아님)
+      return NextResponse.json(makeResponse('삼촌이 확인 중이에요! 조금만 기다려주세요 🙏'));
     }
 
     // ── 2. 봇 모드: Claude 호출 ──
+    const history = getHistory(kakaoId);
     const chatResult = await getChatResponse(userMessage, history, undefined, { maxTokens: 512, platform: '카카오채널' });
     const { reply, escalate, usedPatternIds } = chatResult;
 
     pushHistory(kakaoId, userMessage, reply);
 
-    // 3. 에스컬레이션 → 알림 발송 + Hub 대화 생성
+    // 3. 에스컬레이션 → 로컬 잠금 + 알림 발송 + Hub 대화 생성
     if (escalate) {
+      // ★ 이 순간부터 이 고객은 상담원 모드. 다음 메시지부터 AI 절대 안 부름.
+      escalatedUsers.set(kakaoId, { ts: Date.now() });
+
       await Promise.all([
         notifyChat({ platform: '카카오채널', message: userMessage, escalated: true }).catch(e => console.error('ntfy 실패:', e)),
         sendKakaoEscalationAlert({ platform: '카카오채널', sessionId: kakaoId, message: userMessage }).catch(e => console.error('카카오 알림 실패:', e)),
