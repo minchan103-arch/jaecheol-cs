@@ -3,7 +3,7 @@ import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply, ackPendingReply, logConversation, sendPatternFeedback, checkAdminSession } from '@/lib/hub-api';
+import { sendEscalation, getPendingReply, ackPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
 
 // ── 카카오 대화 히스토리 (in-memory, best-effort) ──
 // Vercel 서버리스: 같은 인스턴스 내에서만 유지. 콜드스타트 시 초기화됨.
@@ -59,45 +59,31 @@ export async function POST(req: NextRequest) {
     // 이전 대화 히스토리 가져오기
     const history = getHistory(kakaoId);
 
-    // ── 1. 상담원 모드 확인 (에스컬레이션된 고객) ──
-    const adminSession = await checkAdminSession(kakaoId, userMessage).catch(() => ({ active: false as const }));
+    // ── 1. 관리자 답변 대기 중인지 확인 + Claude 동시 호출 ──
+    const [pendingReply, chatResult] = await Promise.all([
+      getPendingReply(kakaoId).catch(() => null),
+      getChatResponse(userMessage, history, undefined, { maxTokens: 512, platform: '카카오채널' }),
+    ]);
 
-    if (adminSession.active) {
-      // 상담원 모드: AI 응답 안 함, 관리자 답변만 전달
-      if (adminSession.has_reply && adminSession.reply) {
-        const adminReply = adminSession.reply;
-        pushHistory(kakaoId, userMessage, adminReply);
-        after(async () => {
-          try {
-            await initSheet();
-            await appendConversation({
-              platform: '카카오채널', sessionId: kakaoId,
-              message: userMessage, reply: `[관리자 답변] ${adminReply}`,
-              status: '처리완료', kakaoSent: false,
-            });
-          } catch {}
-        });
-        return NextResponse.json(makeResponse(`💬 삼촌이 직접 답변드려요!\n\n${adminReply}`));
-      }
-
-      // 관리자 답변 없음 → 확인 중 안내
-      pushHistory(kakaoId, userMessage, '삼촌이 확인 중이에요!');
+    // 관리자 답변이 있으면 우선 전달 (봇 응답 대신)
+    if (pendingReply) {
+      const adminReply = pendingReply.reply;
+      pushHistory(kakaoId, userMessage, adminReply);
       after(async () => {
+        await ackPendingReply(kakaoId);
         try {
           await initSheet();
           await appendConversation({
             platform: '카카오채널', sessionId: kakaoId,
-            message: userMessage, reply: '[상담원 모드 - 확인 중]',
-            status: '상담원대기', kakaoSent: false,
+            message: userMessage, reply: `[관리자 답변] ${adminReply}`,
+            status: '처리완료', kakaoSent: false,
           });
         } catch {}
       });
-      return NextResponse.json(makeResponse('삼촌이 확인하고 있어요! 조금만 기다려주세요 😊🙏'));
+      return NextResponse.json(makeResponse(`💬 삼촌이 직접 답변드려요!\n\n${adminReply}`));
     }
 
-    // ── 2. 봇 모드: Claude 호출 ──
-    const chatResult = await getChatResponse(userMessage, history, undefined, { maxTokens: 512, platform: '카카오채널' });
-
+    // ── 2. 봇 모드: Claude 응답 사용 ──
     const { reply, escalate, usedPatternIds } = chatResult;
 
     // 히스토리에 저장
