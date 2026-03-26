@@ -4,7 +4,7 @@ import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { findProfile, saveProfile, updateProfile } from '@/lib/profile';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
+import { sendEscalation, getPendingReply, logConversation, sendPatternFeedback, syncMessage, checkAdminSession } from '@/lib/hub-api';
 
 // --- IP 기반 Rate Limiter (슬라이딩 윈도우) ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1분
@@ -93,18 +93,30 @@ export async function POST(req: NextRequest) {
     const profile = await findProfile({ sessionId }).catch(() => null);
     const isFirstMessage = history.length === 0;
 
-    // 2. 대기 중인 관리자 답변 확인
-    const pendingReply = await getPendingReply(sessionId);
+    // 2. 상담원 모드 확인 — Hub에 활성 에스컬레이션이 있으면 AI 응답 안 함
+    const adminSession = await checkAdminSession(sessionId, message).catch(() => null);
+
+    if (adminSession?.active) {
+      // 고객 메시지만 Hub에 동기화, AI 응답 없음
+      syncMessage({ customer_id: sessionId, message, bot_reply: '' }).catch(() => {});
+      try {
+        await initSheet();
+        await appendConversation({
+          platform, sessionId, message,
+          reply: '[상담원 모드 - 봇 침묵]',
+          status: '상담원대기', kakaoSent: false,
+        });
+      } catch {}
+      // 관리자 답변은 /api/chat/pending 폴링으로 전달
+      return NextResponse.json({ reply: null, escalated: true, agentMode: true, sessionId });
+    }
 
     // 3. Claude로 답변 생성 (프로필 컨텍스트 포함)
     const { reply, escalate, extractedProfile, usedPatternIds } = await getChatResponse(
       message, history, { profile, isFirstMessage }
     );
 
-    // 관리자 답변이 있으면 앞에 추가
-    const finalReply = pendingReply
-      ? `💬 삼촌이 직접 답변드려요!\n\n${pendingReply}\n\n---\n\n${reply}`
-      : reply;
+    const finalReply = reply;
 
     // 3. 추출된 프로필 데이터 저장
     if (extractedProfile && Object.keys(extractedProfile).length > 0) {

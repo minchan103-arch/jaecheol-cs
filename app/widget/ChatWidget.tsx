@@ -25,6 +25,7 @@ export default function ChatWidget({ platform, panelMode = false, memberName }: 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
+  const [agentMode, setAgentMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +38,21 @@ export default function ChatWidget({ platform, panelMode = false, memberName }: 
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
+
+  // 상담원 모드: 3초마다 관리자 답변 폴링
+  useEffect(() => {
+    if (!agentMode) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/chat/pending?sessionId=${sessionId}`);
+        const data = await res.json();
+        if (data.has_reply && data.reply) {
+          setMessages(prev => [...prev, { role: 'assistant', content: `💬 ${data.reply}` }]);
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [agentMode, sessionId]);
 
   function handleClose() {
     setIsOpen(false);
@@ -59,10 +75,23 @@ export default function ChatWidget({ platform, panelMode = false, memberName }: 
         body: JSON.stringify({ message: text, platform, sessionId, history }),
       });
       const data = await res.json();
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: data.reply, escalated: data.escalated },
-      ]);
+      // 상담원 모드: AI 응답 없음, 폴링으로 관리자 답변 수신
+      if (data.agentMode) {
+        setAgentMode(true);
+        // 상담원 모드에서는 봇 메시지 표시 안 함
+      } else if (data.escalated) {
+        // 최초 에스컬레이션: 안내 메시지 + 상담원 모드 진입
+        setAgentMode(true);
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: data.reply, escalated: data.escalated },
+        ]);
+      } else {
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: data.reply, escalated: data.escalated },
+        ]);
+      }
     } catch {
       setMessages(prev => [
         ...prev,
