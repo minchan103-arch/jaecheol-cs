@@ -168,27 +168,7 @@ export default function ChatWidget({ platform, panelMode = false, memberName }: 
                   }`}
                 >
                   {msg.content}
-                  {msg.escalated && (
-                    <div className="mt-3 flex flex-col gap-2">
-                      <a
-                        href={OPENCHAT_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl text-sm font-bold no-underline"
-                        style={{ background: '#FEE500', color: '#191919' }}
-                      >
-                        💬 1:1 상담 연결
-                      </a>
-                      <a
-                        href={KAKAO_CHANNEL_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl text-xs font-medium no-underline border border-gray-200 text-gray-600 bg-white"
-                      >
-                        📢 카카오채널 문의
-                      </a>
-                    </div>
-                  )}
+                  {/* 에스컬레이션 시 버튼 없음 — 헤더에 1:1 상담 버튼 이미 있음 */}
                 </div>
               </div>
             ))}
