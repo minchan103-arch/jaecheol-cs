@@ -74,8 +74,13 @@ export function formatContextForPrompt(ctx: CustomerContext): string {
   }
 
   // 주문을 본인배송 vs 선물(대리주문)으로 분리
-  const selfOrders = ctx.orders.filter(o => o.match_type === 'receiver' || o.match_type === 'both');
-  const giftOrders = ctx.orders.filter(o => o.match_type === 'buyer');
+  // match_type이 없으면 (Hub 구버전) 전체 주문으로 표시
+  const hasMatchType = ctx.orders.some(o => o.match_type);
+  const selfOrders = hasMatchType ? ctx.orders.filter(o => o.match_type === 'receiver' || o.match_type === 'both') : [];
+  const giftOrders = hasMatchType ? ctx.orders.filter(o => o.match_type === 'buyer') : [];
+  const fallbackOrders = hasMatchType
+    ? ctx.orders.filter(o => !o.match_type || o.match_type === 'unknown')
+    : ctx.orders;
 
   if (selfOrders.length > 0) {
     lines.push(`\n★ 본인 수령 주문 (${selfOrders.length}건):`);
@@ -93,11 +98,9 @@ export function formatContextForPrompt(ctx: CustomerContext): string {
     }
   }
 
-  // match_type이 unknown인 경우 (이름 검색)
-  const unknownOrders = ctx.orders.filter(o => o.match_type === 'unknown');
-  if (unknownOrders.length > 0) {
-    lines.push(`\n최근 주문 (${unknownOrders.length}건):`);
-    for (const o of unknownOrders) {
+  if (fallbackOrders.length > 0) {
+    lines.push(`\n최근 주문 (${fallbackOrders.length}건):`);
+    for (const o of fallbackOrders) {
       const date = o.ordered_at ? o.ordered_at.slice(0, 10) : '날짜미상';
       lines.push(`- ${date} | ${o.product_name} | ${o.amount.toLocaleString()}원 | 상태: ${o.status} | 수취인: ${o.receiver_name}`);
     }
