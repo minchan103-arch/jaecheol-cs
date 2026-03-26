@@ -96,10 +96,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(makeResponse(`💬 ${adminReply}`));
       }
 
-      // 관리자 답변 없음 → 봇은 침묵, 고객 메시지만 Hub에 동기화
+      // 관리자 답변 없음 → 봇은 완전 침묵, 고객 메시지만 Hub에 동기화
       logAgentModeMessage(kakaoId, userMessage, '[상담원 모드 - 봇 침묵]', '상담원대기');
-      // 카카오 웹훅은 응답 필수 → 최소한의 안내만 (AI 답변 아님)
-      return NextResponse.json(makeResponse('삼촌이 확인 중이에요! 조금만 기다려주세요 🙏'));
+      // 빈 outputs → 카카오에서 메시지 표시 안 함
+      return NextResponse.json({
+        version: '2.0',
+        template: { outputs: [] },
+      });
     }
 
     // ── 2. 봇 모드: Claude 호출 ──
