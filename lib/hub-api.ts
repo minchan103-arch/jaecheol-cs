@@ -231,9 +231,14 @@ export async function sendPatternFeedback(patternId: number, success: boolean): 
 
 
 /**
- * 고객에게 전달 대기 중인 관리자 답변 확인
+ * 고객에게 전달 대기 중인 관리자 답변 확인 (읽기만, 소비 안 함)
  */
-export async function getPendingReply(customerId: string): Promise<string | null> {
+export interface PendingReplyResult {
+  reply: string;
+  convId: number;
+}
+
+export async function getPendingReply(customerId: string): Promise<PendingReplyResult | null> {
   try {
     const resp = await fetch(
       `${HUB_URL}/api/chatbot/pending-reply?customer_id=${encodeURIComponent(customerId)}`,
@@ -241,8 +246,22 @@ export async function getPendingReply(customerId: string): Promise<string | null
     );
     if (!resp.ok) return null;
     const data = await resp.json();
-    return data.has_reply ? data.reply : null;
+    return data.has_reply ? { reply: data.reply, convId: data.conv_id } : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * 관리자 답변 전달 완료 확인 (소비 처리)
+ */
+export async function ackPendingReply(customerId: string): Promise<void> {
+  try {
+    await fetch(
+      `${HUB_URL}/api/chatbot/pending-reply?customer_id=${encodeURIComponent(customerId)}&ack=true`,
+      { signal: AbortSignal.timeout(2000) },
+    );
+  } catch {
+    // 소비 실패해도 다음번에 다시 전달되므로 무시
   }
 }

@@ -3,7 +3,7 @@ import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
+import { sendEscalation, getPendingReply, ackPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
 
 // ── 카카오 대화 히스토리 (in-memory, best-effort) ──
 // Vercel 서버리스: 같은 인스턴스 내에서만 유지. 콜드스타트 시 초기화됨.
@@ -67,8 +67,21 @@ export async function POST(req: NextRequest) {
 
     // 2. 관리자 답변이 있으면 우선 전달
     if (pendingReply) {
-      pushHistory(kakaoId, userMessage, pendingReply);
-      return NextResponse.json(makeResponse(`💬 삼촌이 직접 답변드려요!\n\n${pendingReply}`));
+      const adminReply = pendingReply.reply;
+      pushHistory(kakaoId, userMessage, adminReply);
+      // 응답 후 소비 처리 (전달 실패 시 답변 보존)
+      after(async () => {
+        await ackPendingReply(kakaoId);
+        try {
+          await initSheet();
+          await appendConversation({
+            platform: '카카오채널', sessionId: kakaoId,
+            message: userMessage, reply: `[관리자 답변] ${adminReply}`,
+            status: '처리완료', kakaoSent: false,
+          });
+        } catch {}
+      });
+      return NextResponse.json(makeResponse(`💬 삼촌이 직접 답변드려요!\n\n${adminReply}`));
     }
 
     const { reply, escalate, usedPatternIds } = chatResult;
