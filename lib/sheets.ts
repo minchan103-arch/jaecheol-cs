@@ -28,7 +28,7 @@ export async function appendConversation(data: {
   sessionId: string;
   message: string;
   reply: string;
-  status: '자동처리완료' | '카카오전달' | '처리완료';
+  status: '자동처리완료' | '카카오전달' | '처리완료' | '상담원대기';
   kakaoSent: boolean;
 }) {
   const url = getWebhookUrl();

@@ -265,3 +265,47 @@ export async function ackPendingReply(customerId: string): Promise<void> {
     // 소비 실패해도 다음번에 다시 전달되므로 무시
   }
 }
+
+
+/**
+ * 상담원 모드 확인: 에스컬레이션된 고객이면 상담원 모드로 처리
+ * - active=true → 상담원 모드 (AI 응답 안 함)
+ * - has_reply=true → 관리자 답변 전달
+ */
+export interface AdminSessionResult {
+  active: boolean;
+  has_reply?: boolean;
+  reply?: string;
+  conv_id?: number;
+}
+
+export async function checkAdminSession(
+  customerId: string,
+  message: string,
+): Promise<AdminSessionResult> {
+  try {
+    const params = new URLSearchParams({ customer_id: customerId, message });
+    const resp = await fetch(`${HUB_URL}/api/chatbot/admin-session?${params}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!resp.ok) return { active: false };
+    return await resp.json();
+  } catch {
+    return { active: false };
+  }
+}
+
+/**
+ * 상담원 모드 종료 → 봇 모드로 전환
+ */
+export async function endAdminSession(convId: number): Promise<void> {
+  try {
+    await fetch(`${HUB_URL}/api/chatbot/conversations/${convId}/end-admin`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch {
+    // fire-and-forget
+  }
+}
