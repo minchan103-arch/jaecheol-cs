@@ -203,7 +203,7 @@ export async function getChatResponse(
   // cs-prompt.ts 형식에 맞춰 ESCALATE: 접두사로 에스컬레이션 판단
   if (text.startsWith('ESCALATE:')) {
     // Claude가 멘트를 자의적으로 바꾸지 못하게 고정 응답 사용
-    const fixedReply = '삼촌에게 연결되었습니다! 😊 문의사항을 말씀해주시면 삼촌이 직접 답변드릴게요 🙏';
+    const fixedReply = '삼촌에게 연결되었습니다! 😊 문의사항을 말씀해주시면 삼촌이 직접 답변드릴게요. 과일 선별 중이라 조금 기다리실 수도 있지만 최대한 빨리 답장드릴게요 조카님! 배송추적이나 간단한 건 제가 바로 도와드릴 수 있어요 🍊';
     return { reply: fixedReply, escalate: true, escalateReason: '에스컬레이션 필요', extractedProfile, usedPatternIds };
   }
 
