@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
@@ -76,30 +76,28 @@ export async function POST(req: NextRequest) {
     // 히스토리에 저장
     pushHistory(kakaoId, userMessage, reply);
 
-    // 3. 후처리 fire-and-forget
-    (async () => {
+    // 3. 에스컬레이션 알림은 응답 전에 발송 (Vercel 종료 방지)
+    if (escalate) {
+      await Promise.all([
+        notifyChat({ platform: '카카오채널', message: userMessage, escalated: true }).catch(e => console.error('ntfy 실패:', e)),
+        sendKakaoEscalationAlert({ platform: '카카오채널', sessionId: kakaoId, message: userMessage }).catch(e => console.error('카카오 알림 실패:', e)),
+        sendEscalation({
+          platform: '카카오채널', customer_id: kakaoId,
+          customer_name: `카카오 ${kakaoId.slice(0, 8)}`, message: userMessage,
+          bot_reply: reply, escalate_reason: '에스컬레이션',
+        }).catch(e => console.error('Hub 에스컬레이션 실패:', e)),
+      ]);
+    }
+
+    // 4. 비핵심 후처리는 after()로 응답 후 실행 (Vercel이 함수를 살려둠)
+    after(async () => {
       try {
-        if (escalate) {
-          Promise.all([
-            sendKakaoEscalationAlert({ platform: '카카오채널', sessionId: kakaoId, message: userMessage }).catch(() => {}),
-            sendEscalation({
-              platform: '카카오채널', customer_id: kakaoId,
-              customer_name: `카카오 ${kakaoId.slice(0, 8)}`, message: userMessage,
-              bot_reply: reply, escalate_reason: '에스컬레이션',
-            }).catch(() => {}),
-          ]).catch(() => {});
-        }
-        // ntfy 알림은 에스컬레이션 시에만 (자동처리는 알림 불필요)
-        if (escalate) {
-          notifyChat({ platform: '카카오채널', message: userMessage, escalated: true }).catch(() => {});
-        }
         await initSheet();
         await appendConversation({
           platform: '카카오채널', sessionId: kakaoId,
           message: userMessage, reply,
           status: escalate ? '카카오전달' : '자동처리완료', kakaoSent: escalate,
         });
-        // Hub 학습 로그 + 패턴 피드백
         logConversation({
           platform: '카카오채널', customer_id: kakaoId,
           user_message: userMessage, bot_reply: reply,
@@ -111,7 +109,7 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (e) { console.error('후처리 오류:', e); }
-    })();
+    });
 
     return NextResponse.json(makeResponse(reply));
 
