@@ -1,9 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getChatResponse } from '@/lib/claude';
+import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { notifyChat } from '@/lib/ntfy';
 import { sendEscalation, getPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
+
+// ── 카카오 대화 히스토리 (in-memory, best-effort) ──
+// Vercel 서버리스: 같은 인스턴스 내에서만 유지. 콜드스타트 시 초기화됨.
+const historyMap = new Map<string, { messages: ChatMessage[]; lastTs: number }>();
+const HISTORY_TTL = 10 * 60 * 1000; // 10분
+const MAX_HISTORY = 6; // 최근 3턴 (user+assistant 쌍)
+
+function getHistory(kakaoId: string): ChatMessage[] {
+  const entry = historyMap.get(kakaoId);
+  if (!entry) return [];
+  if (Date.now() - entry.lastTs > HISTORY_TTL) {
+    historyMap.delete(kakaoId);
+    return [];
+  }
+  return entry.messages;
+}
+
+function pushHistory(kakaoId: string, userMsg: string, botReply: string) {
+  const entry = historyMap.get(kakaoId) || { messages: [], lastTs: 0 };
+  entry.messages.push({ role: 'user', content: userMsg });
+  entry.messages.push({ role: 'assistant', content: botReply });
+  if (entry.messages.length > MAX_HISTORY) {
+    entry.messages = entry.messages.slice(-MAX_HISTORY);
+  }
+  entry.lastTs = Date.now();
+  historyMap.set(kakaoId, entry);
+
+  // 오래된 세션 정리 (100개 초과 시)
+  if (historyMap.size > 100) {
+    const now = Date.now();
+    for (const [k, v] of historyMap) {
+      if (now - v.lastTs > HISTORY_TTL) historyMap.delete(k);
+    }
+  }
+}
 
 // 카카오채널 챗봇 webhook 엔드포인트
 // 카카오 스킬 서버 5초 제한 → 극한 최적화
@@ -21,18 +56,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(makeResponse('메시지가 너무 깁니다. 2000자 이내로 입력해주세요.'));
     }
 
-    // 1. 대기 답변 확인 + Claude 호출 동시 시작 (프로필 조회 생략 → 1~2초 절약)
+    // 이전 대화 히스토리 가져오기
+    const history = getHistory(kakaoId);
+
+    // 1. 대기 답변 확인 + Claude 호출 동시 시작
     const [pendingReply, chatResult] = await Promise.all([
       getPendingReply(kakaoId).catch(() => null),
-      getChatResponse(userMessage, [], undefined, { maxTokens: 512, platform: '카카오채널' }),
+      getChatResponse(userMessage, history, undefined, { maxTokens: 512, platform: '카카오채널' }),
     ]);
 
     // 2. 관리자 답변이 있으면 우선 전달
     if (pendingReply) {
+      pushHistory(kakaoId, userMessage, pendingReply);
       return NextResponse.json(makeResponse(`💬 삼촌이 직접 답변드려요!\n\n${pendingReply}`));
     }
 
     const { reply, escalate, usedPatternIds } = chatResult;
+
+    // 히스토리에 저장
+    pushHistory(kakaoId, userMessage, reply);
 
     // 3. 후처리 fire-and-forget
     (async () => {

@@ -120,7 +120,9 @@ export function formatContextForPrompt(ctx: CustomerContext): string {
     }
   }
 
-  lines.push('\n[응답 규칙]');
+  lines.push('\n[응답 규칙 — 반드시 따를 것]');
+  lines.push('- 위 주문 데이터가 있으면 → 무조건 주문/배송 현황을 바로 안내해. 추가 질문하지 마.');
+  lines.push('- 고객이 전화번호만 보냈어도 → 주문 조회 의도이므로 바로 결과를 보여줘.');
   lines.push('- 고객이 "내 주문", "배송 언제" 등 본인 배송을 물으면 → ★본인 수령 주문 기준으로 답변');
   lines.push('- 고객이 선물/다른 사람 배송을 물으면 → ☆선물 주문 기준으로 답변');
   lines.push('- 대화 맥락을 보고 어떤 주문에 대한 질문인지 판단해서 답변해');
