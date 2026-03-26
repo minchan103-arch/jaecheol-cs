@@ -268,6 +268,27 @@ export async function ackPendingReply(customerId: string): Promise<void> {
 
 
 /**
+ * 활성 대화에 고객 메시지+봇 응답 동기화 (허브 CS 인박스에서 전체 대화 보기)
+ */
+export async function syncMessage(data: {
+  customer_id: string;
+  message: string;
+  bot_reply: string;
+}): Promise<void> {
+  try {
+    await fetch(`${HUB_URL}/api/chatbot/sync-message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch {
+    // fire-and-forget
+  }
+}
+
+
+/**
  * 상담원 모드 확인: 에스컬레이션된 고객이면 상담원 모드로 처리
  * - active=true → 상담원 모드 (AI 응답 안 함)
  * - has_reply=true → 관리자 답변 전달

@@ -3,7 +3,7 @@ import { getChatResponse, ChatMessage } from '@/lib/claude';
 import { appendConversation, initSheet } from '@/lib/sheets';
 import { sendKakaoEscalationAlert } from '@/lib/kakao';
 import { notifyChat } from '@/lib/ntfy';
-import { sendEscalation, getPendingReply, ackPendingReply, logConversation, sendPatternFeedback } from '@/lib/hub-api';
+import { sendEscalation, getPendingReply, ackPendingReply, logConversation, sendPatternFeedback, syncMessage } from '@/lib/hub-api';
 
 // ── 카카오 대화 히스토리 (in-memory, best-effort) ──
 // Vercel 서버리스: 같은 인스턴스 내에서만 유지. 콜드스타트 시 초기화됨.
@@ -116,6 +116,8 @@ export async function POST(req: NextRequest) {
           user_message: userMessage, bot_reply: reply,
           was_escalated: escalate, escalate_reason: escalate ? '에스컬레이션' : '',
         }).catch(() => {});
+        // 활성 대화가 있으면 메시지 동기화 (허브에서 전체 대화 보기)
+        syncMessage({ customer_id: kakaoId, message: userMessage, bot_reply: reply }).catch(() => {});
         if (usedPatternIds && usedPatternIds.length > 0) {
           for (const pid of usedPatternIds) {
             sendPatternFeedback(pid, !escalate).catch(() => {});
